@@ -11,15 +11,10 @@ from . import bedio
 from . import vcfio
 
 
-FIELD_DELIMITER = "\t"
-N_LINES = 500
 
-
-def run(vcf, par_file, output_dir):
+def run(vcf, par_file, output_dir, reference_expression=0):
 
     output_file = os.path.join(output_dir, "predictions.bed")
-
-    reference_expression = 0
 
     # open all files
     with (bedio.open_param(par_file, "r") as fpars,
@@ -36,8 +31,10 @@ def run(vcf, par_file, output_dir):
         for gene_id, variants in fpars.group_by("gene_id"):
 
             log2_afc = np.zeros(len(variants))
-            hap_one = np.zeros(shape=(len(variants), fvcf.n_samples))
-            hap_two = np.zeros(shape=(len(variants), fvcf.n_samples))
+            hap_one = np.zeros(shape=(len(variants),
+                                      fvcf.n_samples))
+            hap_two = np.zeros(shape=(len(variants),
+                                      fvcf.n_samples))
 
             # get sample genotypes of each gene associated variant
             for i, v in enumerate(variants):
@@ -54,13 +51,13 @@ def run(vcf, par_file, output_dir):
                 hap_one[i, :] = tmp["genotypes"][0,:]
                 hap_two[i, :] = tmp["genotypes"][1,:]
 
-            # given haplotypes and parameters compute expected gene expression
             gene_expr = model.predict(hap_one.T,
                                       hap_two.T,
                                       reference_expression,
                                       log2_afc).astype(str)
 
-            # not all rec values from this iteration of record should
+            # not all rec values from this iteration of
+            # record should
             # have identical genomic coordinates.
 
             fout.write(rec[fpars.idx("chrm")],
