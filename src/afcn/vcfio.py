@@ -45,7 +45,7 @@ class ParseGenotypes(VariantFile):
 
         return positions
 
-    def get_biallelic_genotypes(self, contig, pos, filter_val="PASS"):
+    def get_biallelic_genotypes(self, contig, pos, alt_allele=None, filter_val="PASS"):
         """Get array(s) that encode genotypes for a single specified variant.
 
         Extract the alt allele count, unphased {0,1,2,np.nan} or phased {0,1,np.nan}
@@ -57,6 +57,9 @@ class ParseGenotypes(VariantFile):
                 the contig in which the variant is located.
             pos: (int)
                 assume 1 based indexing, as defined in VCF specification
+            alt_allele: (character)
+                A,T,C, or G representing the alt allele in which a parameter
+                was inferred
 
         Returns:
             None 
@@ -88,6 +91,7 @@ class ParseGenotypes(VariantFile):
             #   * specified filter satsified
             if (variant.alts is None
                 or len(variant.alts) > 1
+                or (alt_allele is not None and alt_allele != variant.alts[0])
                 or len(filter_vals := variant.filter.keys()) != 1
                 or filter_val not in filter_vals):
                 return None

@@ -24,8 +24,10 @@ def open_param(filename, mode):
     """Open either gzipped or normal text file for reading.
 
     Args:
-        filename: (str) either .bed or .bed.gz file
-        mode: (char) "r" for read, "w" for write
+        filename: (str)
+            either .bed or .bed.gz file
+        mode: (char)
+            "r" for read, "w" for write
 
     Returns:
         returns instance of class that mimics / uses io.FileIO
@@ -145,7 +147,7 @@ class ParseParamBedABC(ParamBedSpec):
             #              f"file {self.name} is empty."))
             err.args = (err.args[0] + 
                         f"\nMost likely reason for failure is "
-                        "that file {self.name} is empty.",)
+                        "that file is empty.",)
             raise UnboundLocalError(err) from None
 
         self.header = par_line.strip().split(sep=self._field_delimiter)
@@ -153,7 +155,7 @@ class ParseParamBedABC(ParamBedSpec):
         for i, field_name in enumerate(self._req_header_fields.keys()):
 
             if field_name != self.header[i]:
-                raise ValueError(f"Invalid file header for {self.name}")
+                raise ValueError(f"Invalid file header")
 
     def _record_parser(self):
         if self.header is None:
@@ -182,6 +184,8 @@ class ParseParamBedABC(ParamBedSpec):
             yield output
 
     def idx(self, col_name):
+        if col_name not in self._colname_to_idx:
+            raise KeyError(f"{col_name} is not in header")
         return self._colname_to_idx[col_name]
 
     def group_by(self, gb_id):
