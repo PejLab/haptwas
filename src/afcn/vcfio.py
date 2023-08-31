@@ -30,41 +30,72 @@ class ParseGenotypes(VariantFile):
     def n_samples(self):
         return len(self.header.samples)
 
-    def get_biallelic_genotypes(self, contig, pos, filter_val="PASS"):
-        """Get array(s) that encode genotypes for specified variant.
+    @property
+    def contigs(self):
+        return list(self.header.contigs)
 
-        For a genotype to be phased, all samples must be phased.
+    def len_contig(self, contig):
+        return self.header.contigs.get(contig).length
+
+    def get_contig_variants(self, contig):
+        positions = dict()
+
+        for record in self.fetch(contig):
+            positions[record.id] = record.pos
+
+        return positions
+
+    def get_biallelic_genotypes(self, contig, pos, filter_val="PASS"):
+        """Get array(s) that encode genotypes for a single specified variant.
+
+        Extract the alt allele count, unphased {0,1,2,np.nan} or phased {0,1,np.nan}
+        for all samples of a specific variant.  For a genotypes of a variant to be
+        considered phased, all samples must be phased.
 
         Args:
-            contig: (str) the contig in which the variant is located.
-            pos: (int) 
+            contig: (str)
+                the contig in which the variant is located.
+            pos: (int)
+                assume 1 based indexing, as defined in VCF specification
 
         Returns:
-            None: If 
-                * variant is not biallelic
-                * if FILTER != filter_val
-            dict: {
+            None 
+                if:
+                    * variant is not biallelic
+                    * if FILTER != filter_val
+                    * no variant found
+            dict: 
+                {
                     phased: (bool),
                     genotypes: ((n_sample,) np.ndarray) if not phased,
                         otherwise ((2, n_sample) np.ndarray)
-                   }
+                }
         """
 
         genotypes = np.zeros(shape=(2, self.n_samples))
         phased = True
 
+        
+        i = None
+
         for i, variant in enumerate(self.fetch(contig, pos-1, pos)):
 
             # return none if variant isn't an SNV, and doesn't pass
-            # filter, capitilization matters
-            if (variant.alts is None or                                 # deletion, e.g. Ref field  = "."
-                len(variant.alts) > 1 or                                # multiallelic variant
-                len(filter_vals := variant.filter.keys()) != 1 or       # more than one filter val
-                filter_val not in filter_vals):                         # specified filter satsified
+            # filter, capitilization matters:
+            #   * deletion, e.g. Ref field = "."
+            #   * multiallelic variant
+            #   * more than one filter value
+            #   * specified filter satsified
+            if (variant.alts is None
+                or len(variant.alts) > 1
+                or len(filter_vals := variant.filter.keys()) != 1
+                or filter_val not in filter_vals):
                 return None
 
+            # Note that pysam returns None for missing alleles in a sample
             var_encoding = {variant.ref:0,
-                            variant.alts[0]:1}
+                            variant.alts[0]:1,
+                            None:np.nan}
 
             for n, samp_geno in enumerate(variant.samples.itervalues()):
 
@@ -77,6 +108,10 @@ class ParseGenotypes(VariantFile):
                 if phased:
                     phased = samp_geno.phased
 
+        # no variant found
+        if i is None:
+            return None
+        
         if not phased:
             genotypes = np.sum(genotypes, 0)
 

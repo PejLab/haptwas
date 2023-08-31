@@ -75,6 +75,10 @@ class VCFMetaInfoLine(VCFMetaInfoABC):
 class VCFRecord:
     _col_delim = "\t"
     _phase_delim = "|"
+    _geno_entry_regex = "^[0-9\.][|/][0-9\.]:?\w*$"
+    _geno_phased_regex = "^[0-9\.]\|[0-9\.]:?\w*$"
+    _geno_biallelic_regex = "^[01\.][|/][01\.]:?\w*$"
+    _geno_entry_cap_group = "^([0-9\.])[|/]([0-9\.]):?\w*$"
 
     def __init__(self, chrom, pos, id_, ref, alt, 
                  qual, filt, info, format_,
@@ -95,22 +99,22 @@ class VCFRecord:
         genos = np.zeros(shape=(2, len(self.samples)))
 
         for i, samp in enumerate(self.samples):
-            tmp = re.findall("^(\d)[|/](\d)", samp)[0]
+            tmp = re.findall(self._geno_entry_cap_group, samp)[0]
 
-            genos[0, i] = int(tmp[0])
-            genos[1, i] = int(tmp[1])
+            genos[0, i] = int(tmp[0]) if tmp[0] != "." else np.nan
+            genos[1, i] = int(tmp[1]) if tmp[1] != "." else np.nan
 
         return genos
 
     def is_phased(self):
         for samp in self.samples:
-            if re.match("^\d\|\d:?\w*$", samp) is None:
+            if re.match(self._geno_phased_regex, samp) is None:
                 return False
         return True
 
     def is_biallelic(self):
         for samp in self.samples:
-            if re.match("^[01][\|/][01]:?\w*$", samp) is None:
+            if re.match(self._geno_biallelic_regex, samp) is None:
                 return False
 
         return True
@@ -140,7 +144,7 @@ class VCFDataSet:
             VCFMetaInfoLine("phasing","Mixed")]
 
     structured_meta = [VCFStructureMetaInfoLine("contig",
-                                                "ID=chromFicticious",
+                                                "ID=chrm10",
                                                 "length=12345678",
                                                 "assembly=no_assembly",
                                                 "species=not_a_species"),
@@ -178,19 +182,28 @@ class VCFDataSet:
 
     records = [VCFRecord("chrm10",100,"var_1", "A", "T", 30, "PASS", 
                          "SD=10;RD=42", "GT:GQ", 
-                         ["0|0:34", "0|1:20","1|0:21"]),
+                        ["0|0:34", "0|1:20","1|0:21"]),
               VCFRecord("chrm10",1010,"var_2", "A", "T,C", 30, "PASS", 
                         "SD=12;RD=52", "GT:GQ", 
                         ["0|0:34", "0|2:20","1|2:21"]),
               VCFRecord("chrm10",101000,"var_3", "A", ".", 3, "q10", 
                         "SD=12;RD=52", "GT:GQ", 
-                        ["0|0:34", "0|2:20","1|2:21"]),
+                        ["0|0:34", "0|1:20","1|0:21"]),
               VCFRecord("chrm10",101002,"var_4", "T", "A", 21, "PASS", 
                         "SD=12;RD=52", "GT:GQ", 
                         ["0|0:34", "1|1:20","1|0:21"]),
               VCFRecord("chrm10",101003,"var_5", "T", "A", 21, "PASS", 
                         "SD=12;RD=52", "GT:GQ", 
                         ["0|0:34", "1/1:20","1|0:21"]),
+              VCFRecord("chrm10",101004,"var_none_0", "T", "A", 21, "PASS", 
+                        "SD=12;RD=52", "GT:GQ", 
+                        ["0|0:34", "1/1:20",".|0:21"]),
+              VCFRecord("chrm10",101007,"var_none", "A", "T", 21, "PASS", 
+                        "SD=12;RD=52", "GT:GQ", 
+                        ["0|0:34", ".|.:20","1|0:21"]),
+              VCFRecord("chrm10",101008,"var_none_2", "A", "T", 21, "PASS", 
+                        "SD=12;RD=52", "GT:GQ", 
+                        ["0|0:34", "0|.:20","1|0:21"]),
               VCFRecord("chrm10",101012,"var_6", "T", "A", 1, "q10;s50", 
                         "SD=12;RD=52", "GT:GQ", 
                         ["0|0:34", "1|1:20","1|0:21"]),

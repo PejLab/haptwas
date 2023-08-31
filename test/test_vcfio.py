@@ -66,8 +66,10 @@ class TestVCF(unittest.TestCase):
                                   out["genotypes"].shape)
 
             for data_val, true_val in zip(out["genotypes"], true_genotypes):
-                self.assertEqual(data_val, true_val)
-
+                if np.isnan(true_val):
+                    self.assertTrue(np.isnan(data_val))
+                else:
+                    self.assertEqual(data_val, true_val)
 
     def test_genotype_return_none(self):
         """Verify that None for multiallelic and filtered variants.
@@ -103,9 +105,24 @@ class TestVCF(unittest.TestCase):
             self.assertTupleEqual(out["genotypes"].shape, (2, len(self.vcf.samples)))
 
             for i in range(len(record.samples)):
-                self.assertEqual(true_genotypes[0, i], out["genotypes"][0, i])
-                self.assertEqual(true_genotypes[1, i], out["genotypes"][1, i])
+                if np.isnan(true_genotypes[0, i]):
+                    self.assertTrue(np.isnan(out["genotypes"][0,i]))
+                else:
+                    self.assertEqual(true_genotypes[0, i], out["genotypes"][0, i])
 
+                if np.isnan(true_genotypes[1, i]):
+                    self.assertTrue(np.isnan(out["genotypes"][1,i]))
+                else:
+                    self.assertEqual(true_genotypes[1, i], out["genotypes"][1, i])
+
+    def test_no_variants_foundo(self):
+        """Verify genotype records for phased data."""
+        # note that in the simulated vcf there is no variant at position 0
+    
+        for record in vcf_data.records:
+            break
+
+        self.assertIsNone(self.vcf.get_biallelic_genotypes(record.chrom, 1))
         
 
 if __name__ == "__main__":

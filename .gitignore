@@ -7,5 +7,6 @@ src/build
 *.coverage
 *egg-info/
 htmlcov/
+docs/
 *__pycache__/
 *.ipynb_checkpoints/
