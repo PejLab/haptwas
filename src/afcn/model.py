@@ -36,22 +36,22 @@ def predict(hap_one, hap_two, alpha, beta):
     in Mohammadi et al. Genome Research 2017.
 
     Args:
-        hap_one: ((n variants,) ndarray) or 
-            ((N samples, n variants) ndarray) 
+        hap_one: ((n variants,) ndarray) or ((N samples, n variants) ndarray) 
             biallelic genotypes where 0 denotes reference and 1 
             denotes the alternative alleles of first haplotype.
-        hap_two: genotypes for haplotype 2, see hap_one
-        alpha: (float) the log reference expression
-        beta: ((n variants,) ndarray) log allele fold change,
-            should always be a 1-d array
+        hap_two:
+            genotypes for haplotype 2, see hap_one
+        alpha: (float)
+            the log reference expression
+        beta: ((n variants,) ndarray)
+            log allele fold change, should always be a 1-d array
 
     Returns:
-        (float) or 
-        ((N samples,) ndarray) with > 1 sample and arbirary number
-            of variants
+        (float) or ((N samples,) ndarray)
+            with > 1 sample and arbirary number of variants
     """
-    if (not utils.is_biallelic(hap_one) or
-        not utils.is_biallelic(hap_two)):
+    if (not utils.is_biallelic(hap_one)
+        or not utils.is_biallelic(hap_two)):
         raise ValueError("Genotypes are not biallelic")
 
     if beta.ndim != 1 or not utils.is_numeric_nparray(beta):
@@ -72,16 +72,19 @@ def simulate(hap_one, hap_two, alpha, beta, sd, seed=None):
     """Simulate gene expression data.
     
     Args:
-        hap_one: ((n variants,) ndarray) or
-            ((N samples , n variants) ndarray)
+        hap_one: ((n variants,) ndarray) or ((N samples , n variants) ndarray)
             biallelic genotypes where 0 denotes reference and 1
             denotes the alternative alleles of first haplotype.
-        hap_two: genotypes for haplotype 2, see hap_one
-        alpha: (float) the log reference expression
-        beta: ((n variants,) ndarray) log allele fold change,
-            should always be a 1-d array
-        sd: (float) standard deviation of log-normal noise
-        seed: seed for random number generations with
+        hap_two:
+            genotypes for haplotype 2, see hap_one
+        alpha: (float)
+            the log reference expression
+        beta: ((n variants,) ndarray)
+            log allele fold change, should always be a 1-d array
+        sd: (float)
+            standard deviation of log-normal noise
+        seed:
+            seed for random number generations with
             numpy.random.defaul_rng(seed), (default None)
 
     Returns:
