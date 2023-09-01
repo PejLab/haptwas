@@ -119,6 +119,9 @@ class VCFRecord:
 
         return True
 
+    def is_qc_passed(self):
+        return self.filter.lower() == "pass"
+
     def to_string(self):
         return self._col_delim.join([self.chrom,
                                      str(self.pos),

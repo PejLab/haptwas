@@ -72,6 +72,8 @@ class BedSpec:
         self._colname_to_idx  = dict()
 
 
+# TODO should I add intercept term?
+
 class ParamBedSpec(BedSpec):
     _req_header_fields = OrderedDict(chrom = str,
                                      qtl_start = int,
@@ -106,6 +108,12 @@ class ParseParamBedABC(ParamBedSpec):
 
     def __exit__(self, *args):
         self.close()
+
+    def tell(self):
+        return self._fid.tell()
+
+    def seek(self, *args):
+        return self._fid.seek(*args)
 
     @property
     def closed(self):
@@ -157,7 +165,10 @@ class ParseParamBedABC(ParamBedSpec):
             if field_name != self.header[i]:
                 raise ValueError(f"Invalid file header")
 
+        self._data_char_number = self.tell()
+
     def _record_parser(self):
+
         if self.header is None:
             return None
 
@@ -194,6 +205,9 @@ class ParseParamBedABC(ParamBedSpec):
         Requires that gene id are sorted lexicographically.
         """
 
+        if (self.tell() != self._data_char_number):
+            self.seek(self._data_char_number)
+
         # start with ! as it has lowest lexicographic order
         previous_record_gb_id = "!"
 
@@ -205,7 +219,7 @@ class ParseParamBedABC(ParamBedSpec):
 
             previous_record_gb_id = k
 
-            yield k, g
+            yield k, list(g)
 
 
 class ParseParamBed(ParseParamBedABC):
@@ -227,9 +241,6 @@ class WriteParamBed(ParamBedSpec):
 
 
 def open_predict(filename, mode):
-
-    if not os.path.exists(filename):
-        return FileNotFoundError(filename)
 
     if mode == "r":
         raise NotImplementedError
@@ -258,6 +269,9 @@ class WritePredictionBed(PredictionBedABC):
 
         self._fid = fid
         self._meta_and_header_written = False
+
+        self.meta = utils.init_meta()
+        self.meta["data"]="Predicted gene expression"
 
     def __enter__(self):
         return self
@@ -291,7 +305,6 @@ class WritePredictionBed(PredictionBedABC):
         s += self._header_prefix
         s += self._field_delimiter.join([*self._req_header_fields.keys(),
                                          *sample_names])
-        s += self._new_line
         s = s.encode(encoding=self._encoding)
 
         if self._fid.write(s) != len(s):
@@ -317,7 +330,7 @@ class WritePredictionBed(PredictionBedABC):
             raise ValueError("Write meta data before real data")
 
         data_str = self._field_delimiter.join([str(w) for w in data])
-        data_str += self._new_line
+        chrom = self._new_line + chrom
 
         record_str = self._field_delimiter.join([chrom, 
                                                 str(start), 

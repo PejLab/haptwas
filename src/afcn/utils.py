@@ -4,6 +4,8 @@ By: Genomic Data Modeling Lab
 """
 
 import numbers
+from importlib import metadata
+import datetime
 import os
 import re
 import numpy as np
@@ -25,14 +27,15 @@ def is_numeric_nparray(x):
 # returning false, see unit test for example
 
 def is_biallelic(x):
-    """Test whether data set is biallelic (0,1) numeric."""
+    """Test whether data set is biallelic (0,1, np.nan) numeric."""
     data_set = np.unique(x, equal_nan=True)
 
-    if data_set.size > 2 or not is_numeric_nparray(data_set):
+    if data_set.size > 3 or not is_numeric_nparray(data_set):
         return False
 
-    return np.setdiff1d(data_set, 
-                        np.array([0,1])).size == 0
+    delta = np.setdiff1d(data_set, np.array([0,1]))
+
+    return delta.size == 0 or np.isnan(delta).all()
 
 
 def get_version(file=None):
@@ -64,3 +67,17 @@ def is_int(string_value):
 def is_float(string_value):
     """Check whether input string is a floating point number."""
     return re.match("^[+-]?\d+\.\d*$", string_value) is not None
+
+
+def init_meta():
+    today = datetime.datetime.today()
+
+    date = (f"{today.year}-{today.month}-{today.day}"
+            f" {today.hour}:{today.minute}:{today.second}")
+
+    return dict(afcn_version=metadata.version("afcn"),
+                date=date,
+                python_version=".".join([str(os.sys.version_info.major),
+                                         str(os.sys.version_info.minor),
+                                         str(os.sys.version_info.micro)]),
+                user=os.getlogin())

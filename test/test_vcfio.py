@@ -42,7 +42,8 @@ class TestVCF(unittest.TestCase):
         # equal sample size and equal sample names
         self.assertEqual(self.vcf.n_samples, len(vcf_data.samples))
 
-        for test_val,true_val in zip(self.vcf.samples,vcf_data.samples):
+        for test_val,true_val in zip(self.vcf.samples,
+                                     vcf_data.samples):
             self.assertEqual(test_val, true_val)
 
     def test_genotypes_unphased_data(self):
@@ -55,10 +56,16 @@ class TestVCF(unittest.TestCase):
             out = self.vcf.get_biallelic_genotypes(record.chrom,
                                                    record.pos)
 
-            if out is None:
+            if record.is_qc_passed() and record.is_biallelic():
+                self.assertIsNotNone(out)
+            else:
+                self.assertIsNone(out)
                 continue
 
             self.assertFalse(out["phased"])
+
+            self.assertEqual(out["alt_allele"],
+                             record.alt)
 
             true_genotypes = np.sum(record.genotypes, 0)
 
@@ -95,10 +102,16 @@ class TestVCF(unittest.TestCase):
             out = self.vcf.get_biallelic_genotypes(record.chrom,
                                                    record.pos)
 
-            if out is None:
+            if record.is_qc_passed() and record.is_biallelic():
+                self.assertIsNotNone(out)
+            else:
+                self.assertIsNone(out)
                 continue
 
             self.assertTrue(out["phased"])
+
+            self.assertEqual(out["alt_allele"],
+                             record.alt)
 
             true_genotypes = record.genotypes
 
@@ -117,12 +130,14 @@ class TestVCF(unittest.TestCase):
 
     def test_no_variants_foundo(self):
         """Verify genotype records for phased data."""
-        # note that in the simulated vcf there is no variant at position 0
+        # note that in the simulated vcf there is no variant
+        # at position 0
     
         for record in vcf_data.records:
             break
 
-        self.assertIsNone(self.vcf.get_biallelic_genotypes(record.chrom, 1))
+        out = self.vcf.get_biallelic_genotypes(record.chrom, 1)
+        self.assertIsNone(out)
         
 
 if __name__ == "__main__":
