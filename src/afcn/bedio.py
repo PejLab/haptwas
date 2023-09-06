@@ -66,8 +66,14 @@ class BedSpec:
         _date = datetime.today()
         _date = f"{_date.year}-{_date.month:02d}-{_date.day:02d}"
 
+        _py_version=".".join([str(os.sys.version_info.major),
+                              str(os.sys.version_info.minor),
+                              str(os.sys.version_info.micro)])
+
         self.meta = OrderedDict(afcn_version=utils.get_version(),
-                                date = _date)
+                                date = _date,
+                                python_version = _py_version,
+                                user = os.getlogin())
         self.header = None
         self._colname_to_idx  = dict()
 
@@ -270,7 +276,6 @@ class WritePredictionBed(PredictionBedABC):
         self._fid = fid
         self._meta_and_header_written = False
 
-        self.meta = utils.init_meta()
         self.meta["data"]="Predicted gene expression"
 
     def __enter__(self):
