@@ -70,10 +70,17 @@ class BedSpec:
                               str(os.sys.version_info.minor),
                               str(os.sys.version_info.micro)])
 
+        if "USER" in os.environ:
+            user = os.environ["USER"]
+        elif "LOGIN" in os.environ:
+            user = os.environ["LOGIN"]
+        else:
+            user = "dont_know"
+
         self.meta = OrderedDict(afcn_version=utils.get_version(),
                                 date = _date,
                                 python_version = _py_version,
-                                user = os.getlogin())
+                                user = user)
         self.header = None
         self._colname_to_idx  = dict()
 

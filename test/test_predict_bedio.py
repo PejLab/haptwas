@@ -16,12 +16,20 @@ class TestWritePredictionBed(TestCase):
         _py_version=".".join([str(os.sys.version_info.major),
                               str(os.sys.version_info.minor),
                               str(os.sys.version_info.micro)])
+
+        if "USER" in os.environ:
+            user = os.environ["USER"]
+        elif "LOGIN" in os.environ:
+            user = os.environ["LOGIN"]
+        else:
+            user = "dont_know"
+
         # meta data
         date = datetime.today()
         meta_data = [f"##afcn_version={utils.get_version()}\n",
                     f"##date={date.year}-{date.month:02d}-{date.day:02d}\n",
                      f"python_version={_py_version}\n",
-                     f"user={os.getlogin()}"]
+                     f"user={user}"]
 
         self.b_id = io.BytesIO()
         for line in meta_data:
