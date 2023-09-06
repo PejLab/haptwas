@@ -9,10 +9,10 @@ run-name: Test run by ${{ github.actor }}
 on: 
   push:
     branches:
-      - new_interface
+      - main
   pull_request:
     branches:
-      - new_interface
+      - main
 
 jobs:
   run-unit-tests:
