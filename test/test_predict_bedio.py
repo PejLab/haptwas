@@ -2,9 +2,10 @@
 
 By: GDML
 """
-from unittest import TestCase, main
+import os
 from datetime import datetime
 import io
+from unittest import TestCase, main
 
 from afcn import bedio, utils
 
@@ -12,10 +13,15 @@ class TestWritePredictionBed(TestCase):
     def setUp(self):
         self.encoding = "utf-8"
 
+        _py_version=".".join([str(os.sys.version_info.major),
+                              str(os.sys.version_info.minor),
+                              str(os.sys.version_info.micro)])
         # meta data
         date = datetime.today()
         meta_data = [f"##afcn_version={utils.get_version()}\n",
-                    f"##date={date.year}-{date.month:02d}-{date.day:02d}\n"]
+                    f"##date={date.year}-{date.month:02d}-{date.day:02d}\n",
+                     f"python_version={_py_version}\n",
+                     f"user={os.getlogin()}"]
 
         self.b_id = io.BytesIO()
         for line in meta_data:
@@ -33,7 +39,6 @@ class TestWritePredictionBed(TestCase):
 
         self.b_id.seek(0)
         # data records
-
 
     def tearDown(self):
         if not self.b_id.closed:
@@ -71,14 +76,16 @@ class TestWritePredictionBed(TestCase):
                 if not correct_line.startswith(b"#"):
                     break
 
-                self.assertEqual(fid._fid.readline(), correct_line)
+                self.assertEqual(fid._fid.readline(),
+                                 correct_line)
 
             self.assertTrue(fid._meta_and_header_written)
         
     def test_exeception(self):
         with (bedio.WritePredictionBed(io.BytesIO()) as fid,
               self.assertRaises(ValueError)):
-            fid.write_line_record("1", 10, 100, "SIM_GENE_1", [3, 4.3])
+            fid.write_line_record("1", 10, 100, "SIM_GENE_1",
+                                  [3, 4.3])
 
 
 if __name__ == "__main__":

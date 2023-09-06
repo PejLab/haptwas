@@ -39,24 +39,7 @@ def is_biallelic(x):
 
 
 def get_version(file=None):
-
-    if file is None:
-        file = os.path.join(os.path.dirname(__file__), "__init__.py")
-
-    found_version_line = False
-
-    with open(file, "r") as fid:
-
-        for tline in fid:
-            if re.search("__version__", tline) is not None:
-                found_version_line = True
-                break
-            
-    if (not found_version_line or 
-        (tmp := re.search("\w+\.\w+\.\w+", tline)) is None):
-        return None
-
-    return tmp.group()
+    return metadata.version("afcn")
 
 
 def is_int(string_value):
@@ -67,17 +50,3 @@ def is_int(string_value):
 def is_float(string_value):
     """Check whether input string is a floating point number."""
     return re.match("^[+-]?\d+\.\d*$", string_value) is not None
-
-
-def init_meta():
-    today = datetime.datetime.today()
-
-    date = (f"{today.year}-{today.month}-{today.day}"
-            f" {today.hour}:{today.minute}:{today.second}")
-
-    return dict(afcn_version=metadata.version("afcn"),
-                date=date,
-                python_version=".".join([str(os.sys.version_info.major),
-                                         str(os.sys.version_info.minor),
-                                         str(os.sys.version_info.micro)]),
-                user=os.getlogin())
