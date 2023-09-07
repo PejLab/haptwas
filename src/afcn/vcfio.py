@@ -57,7 +57,7 @@ class ParseGenotypes(VariantFile):
             contig: (str)
                 the contig in which the variant is located.
             pos: (int)
-                assume 1 based indexing, as defined in VCF specification
+                assume 0 based indexing
 
         Returns:
             None 
@@ -82,7 +82,7 @@ class ParseGenotypes(VariantFile):
         # to i.
         i = None
 
-        for i, variant in enumerate(self.fetch(contig, pos-1, pos)):
+        for i, variant in enumerate(self.fetch(contig, pos, pos+1)):
             if i > 0:
                 raise ValueError("Number of variants found > 1")
 

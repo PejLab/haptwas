@@ -40,7 +40,8 @@ class TestVCF(unittest.TestCase):
 
     def test_properties(self):
         # equal sample size and equal sample names
-        self.assertEqual(self.vcf.n_samples, len(vcf_data.samples))
+        self.assertEqual(self.vcf.n_samples,
+                         len(vcf_data.samples))
 
         for test_val,true_val in zip(self.vcf.samples,
                                      vcf_data.samples):
@@ -54,7 +55,7 @@ class TestVCF(unittest.TestCase):
                 continue
 
             out = self.vcf.get_biallelic_genotypes(record.chrom,
-                                                   record.pos)
+                                                   record.pos-1)
 
             if record.is_qc_passed() and record.is_biallelic():
                 self.assertIsNotNone(out)
@@ -72,7 +73,8 @@ class TestVCF(unittest.TestCase):
             self.assertTupleEqual(true_genotypes.shape,
                                   out["genotypes"].shape)
 
-            for data_val, true_val in zip(out["genotypes"], true_genotypes):
+            for data_val, true_val in zip(out["genotypes"],
+                                          true_genotypes):
                 if np.isnan(true_val):
                     self.assertTrue(np.isnan(data_val))
                 else:
@@ -84,7 +86,7 @@ class TestVCF(unittest.TestCase):
         for record in vcf_data.records:
 
             out = self.vcf.get_biallelic_genotypes(record.chrom,
-                                                   record.pos)
+                                                   record.pos-1)
 
             if not record.is_biallelic() or record.filter != "PASS":
                 self.assertIsNone(out)
@@ -100,7 +102,7 @@ class TestVCF(unittest.TestCase):
                 continue
 
             out = self.vcf.get_biallelic_genotypes(record.chrom,
-                                                   record.pos)
+                                                   record.pos-1)
 
             if record.is_qc_passed() and record.is_biallelic():
                 self.assertIsNotNone(out)
