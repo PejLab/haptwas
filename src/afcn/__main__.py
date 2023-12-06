@@ -4,7 +4,9 @@ By: Genomic Data Modeling Laboratory
 """
 
 import sys
+import os
 import argparse
+import logging
 
 
 parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -178,6 +180,15 @@ predict_parser.add_argument(
 
 
 args = parser.parse_args(sys.argv[1:])
+
+logging.basicConfig(filename=os.path.join(args.output_dir,
+                                          f"{args.subparser_name}.log"),
+                level=logging.INFO,
+                filemode="w",
+                format="%(levelname)s\t%(asctime)s\t%(message)s",
+                datefmt="%Y-%m-%d %H:%M:%S")
+logging.info(" ".join(sys.argv))
+
 
 
 if args.version:

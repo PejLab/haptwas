@@ -58,9 +58,9 @@ class TestVCF(unittest.TestCase):
                                                    record.pos-1)
 
             if record.is_qc_passed() and record.is_biallelic():
-                self.assertIsNotNone(out)
+                self.assertEqual(out["status"], 0)
             else:
-                self.assertIsNone(out)
+                self.assertNotEqual(out["status"], 0)
                 continue
 
             self.assertFalse(out["phased"])
@@ -80,7 +80,7 @@ class TestVCF(unittest.TestCase):
                 else:
                     self.assertEqual(data_val, true_val)
 
-    def test_genotype_return_none(self):
+    def test_genotype_failed_query(self):
         """Verify that None for multiallelic and filtered variants.
         """
         for record in vcf_data.records:
@@ -88,10 +88,16 @@ class TestVCF(unittest.TestCase):
             out = self.vcf.get_biallelic_genotypes(record.chrom,
                                                    record.pos-1)
 
-            if not record.is_biallelic() or record.filter != "PASS":
-                self.assertIsNone(out)
+            if not record.is_biallelic():
+                self.assertNotEqual(out["status"], 0)
+            elif record.alt == '.':
+                self.assertEqual(out["status"], 3)
+            elif len(record.alt) > 1:
+                self.assertEqual(out["status"], 4)
+            elif record.filter != "PASS":
+                self.assertEqual(out["status"], 5)
             else:
-                self.assertIsNotNone(out)
+                self.assertEqual(out["status"], 0)
 
 
     def test_genotype_phased_data(self):
@@ -105,9 +111,9 @@ class TestVCF(unittest.TestCase):
                                                    record.pos-1)
 
             if record.is_qc_passed() and record.is_biallelic():
-                self.assertIsNotNone(out)
+                self.assertEqual(out["status"], 0)
             else:
-                self.assertIsNone(out)
+                self.assertNotEqual(out["status"], 0)
                 continue
 
             self.assertTrue(out["phased"])
@@ -130,7 +136,7 @@ class TestVCF(unittest.TestCase):
                 else:
                     self.assertEqual(true_genotypes[1, i], out["genotypes"][1, i])
 
-    def test_no_variants_foundo(self):
+    def test_no_variants_found(self):
         """Verify genotype records for phased data."""
         # note that in the simulated vcf there is no variant
         # at position 0
@@ -139,7 +145,7 @@ class TestVCF(unittest.TestCase):
             break
 
         out = self.vcf.get_biallelic_genotypes(record.chrom, 1)
-        self.assertIsNone(out)
+        self.assertEqual(out["status"], 2)
         
 
 if __name__ == "__main__":
