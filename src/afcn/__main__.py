@@ -119,8 +119,12 @@ Contents:
 
 OUTPUT FILES
 
-* <output_dir>/predictions.bed
-* <output_dir>/predictions.log
+* <user_prefix>.bed
+* <user_prefix>.log
+
+default to
+* predict.bed
+* predict.log
 
 
 SPECIFICATION predictions.bed
@@ -156,9 +160,11 @@ predict_parser.add_argument(
        pair.  See below for more details.
        """)
 predict_parser.add_argument(
-        "output_dir",
+        "-o",
         type=str,
-        help="Directory to write results")
+        default=None,
+        help=("File prefix, and path, for the results"
+              " and log files"))
 
 # ================================================================
 
@@ -181,8 +187,10 @@ predict_parser.add_argument(
 
 args = parser.parse_args(sys.argv[1:])
 
-logging.basicConfig(filename=os.path.join(args.output_dir,
-                                          f"{args.subparser_name}.log"),
+if args.o is None:
+    args.o = args.subparser_name
+
+logging.basicConfig(filename=f"{args.o}.log",
                 level=logging.INFO,
                 filemode="w",
                 format="%(levelname)s\t%(asctime)s\t%(message)s",
@@ -204,7 +212,7 @@ if args.subparser_name == "fit":
 if args.subparser_name == "predict":
     from . import _predict
 
-    _predict.run(args.vcf, args.params, args.output_dir)
+    _predict.run(args.vcf, args.params, args.o)
 
 
 if args.subparser_name == "twas":

@@ -12,11 +12,14 @@ from . import bedio
 from . import vcfio
 
 
-def run(vcf, par_file, output_dir, reference_expression=0):
+def run(vcf, par_file, output_fname, reference_expression=0):
 
     log2_reference_expression = 0
 
-    output_file = os.path.join(output_dir, "predictions.bed")
+    if output_fname is None:
+        output_fname = "predict"
+
+    output_file = f"{output_fname}.bed"
 
     logging.info("Begin predictions")
     # open all files
