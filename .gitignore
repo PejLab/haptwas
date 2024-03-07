@@ -8,5 +8,6 @@ src/build
 *egg-info/
 htmlcov/
 docs/
+build/
 *__pycache__/
 *.ipynb_checkpoints/

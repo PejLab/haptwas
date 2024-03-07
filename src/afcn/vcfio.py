@@ -60,18 +60,27 @@ class ParseGenotypes(VariantFile):
                 assume 0 based indexing
 
         Returns:
-            None 
-                if:
-                    * variant is not biallelic
-                    * if FILTER != filter_val
-                    * no variant found
             dict: 
                 {
                     phased: (bool),
                     genotypes: ((n_sample,) np.ndarray) if not phased,
                         otherwise ((2, n_sample) np.ndarray)
                     alt_allele: (character)
+                    status: (int)
+                    msg: (str)
                 }
+
+        where `status` and `msg` reports whether a variant that satisfies
+        our requirements is found, if not it reports the incompatibility.
+
+        | status code    |  msg                           |
+        | -------------- | ------------------------------ |
+        | 0              | Success                        |
+        | 1              | More than one variant found.   |
+        | 2              | No variant found.              |
+        | 3              | No alt allele found.           |
+        | 4              | More than 1 alt allele found.  |
+        | 5              | Filter mismatch                |
         """
 
         genotypes = np.zeros(shape=(2, self.n_samples))
@@ -84,11 +93,13 @@ class ParseGenotypes(VariantFile):
 
         for i, variant in enumerate(self.fetch(contig, pos, pos+1)):
             if i > 0:
-                raise ValueError("Number of variants found > 1")
+                return dict(status= 1,
+                            msg="More than one variant found")
 
         # check whether a variant was found
         if i is None:
-            return None
+            return dict(status=2,
+                        msg="No variant found")
 
         # return none if variant isn't an SNV, and doesn't pass
         # filter, capitilization matters:
@@ -96,11 +107,21 @@ class ParseGenotypes(VariantFile):
         #   * multiallelic variant
         #   * more than one filter value
         #   * specified filter satsified
-        if (variant.alts is None
-            or len(variant.alts) > 1
-            or len(filter_vals := variant.filter.keys()) != 1
+        if variant.alts is None:
+            return dict(status=3,
+                        msg="No alt allele")
+
+        if len(variant.alts) > 1:
+            return dict(status=4,
+                        msg="More than 1 alt allele found")
+
+        if (len(filter_vals := variant.filter.keys()) != 1
             or filter_val not in filter_vals):
-            return None
+
+            return dict(status=5,
+                        msg=("VCF filter value(s) does exclusively equal"
+                             f" the required input of {filter_val}"))
+
 
         # Note that pysam returns None for missing alleles in a sample
         var_encoding = {variant.ref:0,
@@ -118,10 +139,11 @@ class ParseGenotypes(VariantFile):
             if phased:
                 phased = samp_geno.phased
 
-        
         if not phased:
             genotypes = np.sum(genotypes, 0)
 
         return {"phased":phased,
                 "genotypes":genotypes,
-                "alt_allele": variant.alts[0]}
+                "alt_allele": variant.alts[0],
+                "status": 0,
+                "msg": "success"}

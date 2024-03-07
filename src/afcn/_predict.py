@@ -4,6 +4,7 @@ By: Genomic Data Modeling Lab
 """
 
 import os
+import logging
 import numpy as np
 
 from . import model
@@ -17,6 +18,7 @@ def run(vcf, par_file, output_dir, reference_expression=0):
 
     output_file = os.path.join(output_dir, "predictions.bed")
 
+    logging.info("Begin predictions")
     # open all files
     with (bedio.open_param(par_file, "r") as fpars,
           vcfio.read_vcf(vcf) as fvcf,
@@ -44,13 +46,31 @@ def run(vcf, par_file, output_dir, reference_expression=0):
 
                 # what to do with missing data?
                 # alt alleles must match
-                if (tmp is None
-                    or tmp["alt_allele"] != v[fpars.idx("alt")]):
+                if tmp["status"] != 0:
+
+                    logging.info(f"contig:{v[fpars.idx('chrom')]}"
+                                 f"\tbed_pos:{v[fpars.idx('variant_pos')]}"
+                                 f"\tstatus:{tmp['status']}"
+                                 f"\tmsg:{tmp['msg']}")
+                    continue
+
+                elif tmp["alt_allele"] != v[fpars.idx("alt")]:
+
+                    logging.info(f"contig:{v[fpars.idx('chrom')]}"
+                                 f"\tbed_pos:{v[fpars.idx('variant_pos')]}"
+                                 "\tstatus:-1"
+                                 "\tmsg:Alt allele in bed and vcf file do not match")
                     continue
                 
                 # TODO should I raise exception or just not include
                 # variant in analysis?
                 if not tmp["phased"]:
+
+                    logging.info(f"contig:{v[fpars.idx('chrom')]}"
+                                 f"\tbed_pos:{v[fpars.idx('variant_pos')]}"
+                                 "\tstatus:-2"
+                                 "\tmsg:Not phased")
+
                     continue
                 #raise ValueError(("Data are not phased, "
                 #                    "as is required."))
@@ -74,3 +94,5 @@ def run(vcf, par_file, output_dir, reference_expression=0):
                                    v[fpars.idx("gene_end")],
                                    gene_id,
                                    gene_expr)
+
+    logging.info("End predictions")
