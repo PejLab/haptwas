@@ -7,6 +7,7 @@ import numpy as np
 from pysam import VariantFile
 
 
+
 # TODO automatic generation of tabix index from bgzip vcf
 def read_vcf(vcf):
     """Open file object """
@@ -45,12 +46,11 @@ class ParseGenotypes(VariantFile):
 
         return positions
 
-    def get_biallelic_genotypes(self, contig, pos, filter_val="PASS"):
-        """Get array(s) of genotypes of a biallelic locus.
+    def get_genotypes(self, contig, pos, filter_val="PASS"):
+        """Get array(s) of genotypes.
 
-        Extract the alt allele count, unphased {0,1,2,np.nan} or phased
-        {0,1,np.nan} for all samples of at a specified locus.  Only
-        return data for biallelic variants.  For a genotypes of a variant
+        Extract the genotype{0,1,2,...,np.nan} for all samples
+        of at a specified locus. For a genotypes of a variant
         to be considered phased, all samples must be phased.
 
         Args:
@@ -63,15 +63,18 @@ class ParseGenotypes(VariantFile):
             dict: 
                 {
                     phased: (bool),
-                    genotypes: ((n_sample,) np.ndarray) if not phased,
-                        otherwise ((2, n_sample) np.ndarray)
-                    alt_allele: (character)
+                    genotypes: ((2, n_sample) np.ndarray)
+                    var_encodings: (dict)
+                        key value pairs of allele (A,T,C,G)
+                        and numeric value.  Missing genotypes
+                        are None
                     status: (int)
                     msg: (str)
                 }
 
-        where `status` and `msg` reports whether a variant that satisfies
-        our requirements is found, if not it reports the incompatibility.
+        where `status` and `msg` reports whether a variant that
+        satisfies our requirements is found, if not it reports
+        the incompatibility.
 
         | status code    |  msg                           |
         | -------------- | ------------------------------ |
@@ -79,11 +82,10 @@ class ParseGenotypes(VariantFile):
         | 1              | More than one variant found.   |
         | 2              | No variant found.              |
         | 3              | No alt allele found.           |
-        | 4              | More than 1 alt allele found.  |
-        | 5              | Filter mismatch                |
+        | 4              | Filter mismatch                |
         """
 
-        genotypes = np.zeros(shape=(2, self.n_samples))
+        genotypes = np.full((2, self.n_samples), np.nan)
         phased = True
         
         # Set i to None to detect when no variant is found.  When no
@@ -104,34 +106,51 @@ class ParseGenotypes(VariantFile):
         # return none if variant isn't an SNV, and doesn't pass
         # filter, capitilization matters:
         #   * deletion, e.g. Ref field = "."
-        #   * multiallelic variant
         #   * more than one filter value
         #   * specified filter satsified
         if variant.alts is None:
             return dict(status=3,
                         msg="No alt allele")
 
-        if len(variant.alts) > 1:
-            return dict(status=4,
-                        msg="More than 1 alt allele found")
-
         if (len(filter_vals := variant.filter.keys()) != 1
             or filter_val not in filter_vals):
 
-            return dict(status=5,
+            return dict(status=4,
                         msg=("VCF filter value(s) does exclusively equal"
                              f" the required input of {filter_val}"))
 
 
-        # Note that pysam returns None for missing alleles in a sample
-        var_encoding = {variant.ref:0,
-                        variant.alts[0]:1,
+        # Note that pysam returns None for missing alleles in
+        # a sample
+
+        # according to vcf4.4 specification
+        genotype_map = {variant.ref:0,
                         None:np.nan}
+
+
+        for alt_allele in variant.alts:
+            genotype_map[alt_allele] = None
+
 
         for n, samp_geno in enumerate(variant.samples.itervalues()):
 
-            genotypes[0, n] = var_encoding[samp_geno.alleles[0]]
-            genotypes[1, n] = var_encoding[samp_geno.alleles[1]]
+            # sets the alternative allele encodings
+            for allele, idx in zip(samp_geno.alleles,
+                                   samp_geno.allele_indices):
+
+
+                # default entry is np.nan
+                if allele is None and idx is None:
+                    continue
+                elif genotype_map[allele] is None:
+                    genotype_map[allele] = idx
+                elif genotype_map[allele] != idx:
+                    raise ValueError("Inconsistent indexing of"
+                                     " alleles across samples")
+
+
+            genotypes[0, n] = genotype_map[samp_geno.alleles[0]]
+            genotypes[1, n] = genotype_map[samp_geno.alleles[1]]
 
             # if geno.phased is False for any one sample, then by
             # this if statement geno.phased will be False at the
@@ -139,11 +158,9 @@ class ParseGenotypes(VariantFile):
             if phased:
                 phased = samp_geno.phased
 
-        if not phased:
-            genotypes = np.sum(genotypes, 0)
-
         return {"phased":phased,
                 "genotypes":genotypes,
-                "alt_allele": variant.alts[0],
+                "genotype_map":genotype_map,
+                "alts":variant.alts,
                 "status": 0,
                 "msg": "success"}

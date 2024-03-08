@@ -54,49 +54,52 @@ class TestVCF(unittest.TestCase):
             if record.is_phased():
                 continue
 
-            out = self.vcf.get_biallelic_genotypes(record.chrom,
-                                                   record.pos-1)
+            out = self.vcf.get_genotypes(record.chrom,
+                                         record.pos-1)
 
-            if record.is_qc_passed() and record.is_biallelic():
-                self.assertEqual(out["status"], 0)
-            else:
+            if not record.is_qc_passed():
                 self.assertNotEqual(out["status"], 0)
                 continue
 
             self.assertFalse(out["phased"])
 
-            self.assertEqual(out["alt_allele"],
-                             record.alt)
+            self.assertEqual(len(out["alts"]),
+                             len(record.alt))
 
-            true_genotypes = np.sum(record.genotypes, 0)
+            for alt_allele in out["alts"]:
+                self.assertIn(alt_allele, record.alt)
 
-            self.assertTupleEqual(true_genotypes.shape,
+            for alt_allele in record.alt:
+                self.assertIn(alt_allele, out["alts"])
+
+
+            self.assertTupleEqual(record.genotypes.shape,
                                   out["genotypes"].shape)
 
-            for data_val, true_val in zip(out["genotypes"],
-                                          true_genotypes):
-                if np.isnan(true_val):
-                    self.assertTrue(np.isnan(data_val))
-                else:
-                    self.assertEqual(data_val, true_val)
+            for hap_num in range(2):
+                for data_val, true_val in zip(out["genotypes"][hap_num,:],
+                                              record.genotypes[hap_num,:]):
+                    if np.isnan(true_val):
+                        self.assertTrue(np.isnan(data_val))
+                    else:
+                        self.assertEqual(data_val, true_val)
 
     def test_genotype_failed_query(self):
-        """Verify that None for multiallelic and filtered variants.
+        """Verify that None for filtered variants.
         """
         for record in vcf_data.records:
 
-            out = self.vcf.get_biallelic_genotypes(record.chrom,
-                                                   record.pos-1)
+            out = self.vcf.get_genotypes(record.chrom,
+                                         record.pos-1)
 
-            if not record.is_biallelic():
-                self.assertNotEqual(out["status"], 0)
-            elif record.alt == '.':
+            if record.alt == '.':
                 self.assertEqual(out["status"], 3)
-            elif len(record.alt) > 1:
-                self.assertEqual(out["status"], 4)
             elif record.filter != "PASS":
-                self.assertEqual(out["status"], 5)
+                self.assertEqual(out["status"], 4)
             else:
+                for allele in out["alts"]:
+                    self.assertIn(allele, record.alt)
+
                 self.assertEqual(out["status"], 0)
 
 
@@ -104,22 +107,21 @@ class TestVCF(unittest.TestCase):
         """Verify genotype records for phased data."""
 
         for record in vcf_data.records:
-            if not record.is_phased():
+            out = self.vcf.get_genotypes(record.chrom,
+                                         record.pos-1)
+
+            if not record.is_qc_passed():
+                self.assertNotEqual(out["status"], 0)
                 continue
 
-            out = self.vcf.get_biallelic_genotypes(record.chrom,
-                                                   record.pos-1)
-
-            if record.is_qc_passed() and record.is_biallelic():
-                self.assertEqual(out["status"], 0)
-            else:
-                self.assertNotEqual(out["status"], 0)
+            if not record.is_phased():
+                self.assertFalse(out["phased"])
                 continue
 
             self.assertTrue(out["phased"])
 
-            self.assertEqual(out["alt_allele"],
-                             record.alt)
+            for allele in out["alts"]:
+                self.assertIn(allele, record.alt)
 
             true_genotypes = record.genotypes
 
@@ -144,7 +146,7 @@ class TestVCF(unittest.TestCase):
         for record in vcf_data.records:
             break
 
-        out = self.vcf.get_biallelic_genotypes(record.chrom, 1)
+        out = self.vcf.get_genotypes(record.chrom, 1)
         self.assertEqual(out["status"], 2)
         
 
