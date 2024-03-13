@@ -112,12 +112,12 @@ class VCFRecord:
                 return False
         return True
 
-    def is_biallelic(self):
-        for samp in self.samples:
-            if re.match(self._geno_biallelic_regex, samp) is None:
-                return False
-
-        return True
+#    def is_biallelic(self):
+#        for samp in self.samples:
+#            if re.match(self._geno_biallelic_regex, samp) is None:
+#                return False
+#
+#        return True
 
     def is_qc_passed(self):
         return self.filter.lower() == "pass"

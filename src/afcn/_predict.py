@@ -39,13 +39,13 @@ def run(vcf, par_file, output_fname, reference_expression=0):
 
             log2_afc = np.full(len(variants), np.nan)
 
-            hap_one = np.full((fvcf.n_samples, len(variants)), np.nan)
-            hap_two = np.full((fvcf.n_samples, len(variants)), np.nan)
+            haplotypes = [np.full((fvcf.n_samples, len(variants)), np.nan),
+                          np.full((fvcf.n_samples, len(variants)), np.nan)]
 
             # get sample genotypes of each gene associated variant
             for i, v in enumerate(variants):
-                tmp = fvcf.get_biallelic_genotypes(v[fpars.idx("chrom")],
-                                                   v[fpars.idx("variant_pos")])
+                tmp = fvcf.get_genotypes(v[fpars.idx("chrom")],
+                                    v[fpars.idx("variant_pos")])
 
                 # what to do with missing data?
                 # alt alleles must match
@@ -57,12 +57,14 @@ def run(vcf, par_file, output_fname, reference_expression=0):
                                  f"\tmsg:{tmp['msg']}")
                     continue
 
-                elif tmp["alt_allele"] != v[fpars.idx("alt")]:
+                if (alt_allele := v[fpars.idx("alt")]) not in tmp["alts"]: 
 
                     logging.info(f"contig:{v[fpars.idx('chrom')]}"
-                                 f"\tbed_pos:{v[fpars.idx('variant_pos')]}"
+                                 "\tbed_pos:"
+                                 f"{v[fpars.idx('variant_pos')]}"
                                  "\tstatus:-1"
-                                 "\tmsg:Alt allele in bed and vcf file do not match")
+                                 "\tmsg:Alt allele in bed file"
+                                 " not a member of alt alleles in VCF.")
                     continue
                 
                 # TODO should I raise exception or just not include
@@ -75,16 +77,25 @@ def run(vcf, par_file, output_fname, reference_expression=0):
                                  "\tmsg:Not phased")
 
                     continue
-                #raise ValueError(("Data are not phased, "
-                #                    "as is required."))
 
                 log2_afc[i] = v[fpars.idx("log2_afc")]
 
-                hap_one[:, i] = tmp["genotypes"][0, :]
-                hap_two[:, i] = tmp["genotypes"][1, :]
+                for hap_num in range(2):
 
-            gene_expr = model.predict(hap_one,
-                                      hap_two,
+                    for n, allele_idx in enumerate(tmp["genotypes"][hap_num,:]):
+
+                        if allele_idx == 0:
+                            haplotypes[hap_num][n, i] = 0
+                            continue
+
+                        if allele_idx == tmp["genotype_map"][alt_allele]:
+                            # alt allele in parameter bed file should be 1
+
+                            haplotypes[hap_num][n, i] = 1
+
+
+            gene_expr = model.predict(haplotypes[0],
+                                      haplotypes[1],
                                       log2_reference_expression,
                                       log2_afc)
 
