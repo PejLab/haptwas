@@ -170,19 +170,57 @@ predict_parser.add_argument(
 
 # twas subcommand
 
-# twas_parser = subparsers.add_parser(
-#         "twas",
-#         help="""Perform transcriptome wide association study
-#         from gene expression predictions.""",
-#         formatter_class=argparse.RawDescriptionHelpFormatter,
-#         description="""
-# Given a set of gene expression predictions per individual, perform 
-# association tests between the predicted expression and a observed
-# phenotype.
-# """,
-#         epilog = """
-# OUTPUT FILE SPECIFICATION
-# """)
+twas_parser = subparsers.add_parser(
+        "twas",
+        help="""Interface to prediXcan for estimating associations
+        between gene expression prediction and phenotype according
+        to afcn package specifications.""",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description="""
+Given a set of gene expression predictions per individual, perform 
+association tests between the predicted expression and a observed
+phenotype.
+""",
+        epilog = """
+
+
+ATTRIBUTION
+
+prediXcan is used for running transcriptome wide association study
+and was developed by Hae Kyung Im Lab at University of Chicago,
+the source code has been made available under the following license
+
+
+The MIT License (MIT)
+
+Copyright (c) 2016 Hakymlab
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+""")
+
+twas_parser.add_argument("--predictions",
+                         type=str,
+                         help="Path to predicted gene expression bed file.")
+twas_parser.add_argument("-o",
+                         type=str,
+                         default=".",
+                         help="Filename of results.")
 
 
 args = parser.parse_args(sys.argv[1:])
@@ -218,4 +256,4 @@ if args.subparser_name == "predict":
 if args.subparser_name == "twas":
     from . import _twas
 
-    _twas.run()
+    _twas.run(args.predictions)

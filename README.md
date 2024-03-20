@@ -2,29 +2,37 @@
 
 # 🚧 Under Construction 🚧
 
-# Inferring allele Fold Change (aFC) from phased data
+# The allele fold change
 
 Mohammadi et al. 2017 [1] defined allele fold change (aFC) as the 
-ratio in the number of gene transcripts under the alternative 
+ratio of gene transcripts under the alternative 
 allele with respect to that of the reference allele.  Consequently,
 it is a parameter that quantifies the effect of any one regulatory
-variant with its target gene.  The authors of [1] showed mathematically
-how to combine individual phased genotypes and aFC values to predict 
-observed gene expression.  While this definition and model is general,
-the authors used it to specifically study *cis*-regulatory effects 
-and RNA sequencing data.  To find out more on the model checkout
-the `More on the model` section below.
+variant with its target gene.  The authors of [1] mathematically
+showed how to combine individual phased genotypes and aFC values to
+predict observed gene expression.  While this definition and model
+is general, the authors used it to specifically study 
+*cis*-regulatory effects and RNA sequencing data.  To find out more
+on the model checkout the `More on the model` section below.
 
-This software package for the Python programming language can be 
-used to:
+This software package makes use of the Python programming language
+and the R language for statistical computing.  It contains subcommands
 
 * **predict** gene expression abundances from genotype data under
     the model of [1].
+* **twas** to perform transcriptome wide association study using the
+    PrediXican model of [2]
 
-from either the command line or within a Python script.
 
+## Requirements
 
-## Installation
+* R >= 4.0.0
+* Python >= 3.9
+
+and Python packages
+
+* **numpy** >= 1.14.0
+* **pysam** >= 0.21.0
 
 🚧
 
