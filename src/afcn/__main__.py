@@ -159,16 +159,13 @@ predict_parser.add_argument(
        log2 aFC point estimates per (gene, variant)
        pair.  See below for more details.
        """)
-predict_parser.add_argument("--filter",
-            default="PASS",
+predict_parser.add_argument("--filters",
+            default=["PASS"],
             type=str,
             nargs="+",
             help="""Filter(s) that genotypes must meet to be
                  inculded in the analysis.  Input is not"
                  case sensitive, default pass""")
-
-
-
 
 predict_parser.add_argument(
         "-o",
@@ -222,8 +219,7 @@ if args.subparser_name == "fit":
 
 if args.subparser_name == "predict":
     from . import _predict
-
-    _predict.run(args.vcf, args.params, args.o)
+    _predict.run(args.vcf, args.params, args.o, args.filters)
 
 
 if args.subparser_name == "twas":

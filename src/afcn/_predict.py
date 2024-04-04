@@ -12,7 +12,7 @@ from . import bedio
 from . import vcfio
 
 
-def run(vcf, par_file, output_fname, reference_expression=0):
+def run(vcf, par_file, output_fname, filters):
 
     log2_reference_expression = 0
 
@@ -45,7 +45,8 @@ def run(vcf, par_file, output_fname, reference_expression=0):
             # get sample genotypes of each gene associated variant
             for i, v in enumerate(variants):
                 tmp = fvcf.get_genotypes(v[fpars.idx("chrom")],
-                                    v[fpars.idx("variant_pos")])
+                                    v[fpars.idx("variant_pos")],
+                                    filter_vals=filters)
 
                 # what to do with missing data?
                 # alt alleles must match

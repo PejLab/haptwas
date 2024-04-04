@@ -148,7 +148,33 @@ class TestVCF(unittest.TestCase):
 
         out = self.vcf.get_genotypes(record.chrom, 1)
         self.assertEqual(out["status"], 2)
+
+
+class TestFilters(unittest.TestCase):
+    def setUp(self):
+        self.vcf = vcfio.ParseGenotypes(vcf_name, "r")
         
+    def test_list_requirement(self):
+        rec = vcf_data.records[0]
+
+        with self.assertRaises(TypeError):
+            self.vcf.get_genotypes(rec.chrom,
+                                   rec.pos-1,
+                                   rec.filter)
+
+    def test_list_inputs(self):
+        for rec in vcf_data.records:
+            out = self.vcf.get_genotypes(rec.chrom,
+                                         rec.pos-1,
+                                         ['pass','.'])
+
+            if ((filt := rec.filter.lower()) == "pass"
+                or filt == "."):
+                self.assertEqual(out["status"], 0)
+                continue
+
+            self.assertNotEqual(out["status"], 0)
+
 
 if __name__ == "__main__":
     unittest.addModuleCleanup(tearDownModule)

@@ -46,7 +46,7 @@ class ParseGenotypes(VariantFile):
 
         return positions
 
-    def get_genotypes(self, contig, pos, filter_val="PASS"):
+    def get_genotypes(self, contig, pos, filter_vals=["PASS"]):
         """Get array(s) of genotypes.
 
         Extract the genotype{0,1,2,...,np.nan} for all samples
@@ -58,6 +58,9 @@ class ParseGenotypes(VariantFile):
                 the contig in which the variant is located.
             pos: (int)
                 assume 0 based indexing
+            filter_vals:(list)
+                list of strings specifing acceptable
+                variant filter value(s)
 
         Returns:
             dict: 
@@ -84,6 +87,9 @@ class ParseGenotypes(VariantFile):
         | 3              | No alt allele found.           |
         | 4              | Filter mismatch                |
         """
+
+        if not isinstance(filter_vals, list):
+            raise TypeError("Input filter value must be a Python list")
 
         genotypes = np.full((2, self.n_samples), np.nan)
         phased = True
@@ -112,12 +118,23 @@ class ParseGenotypes(VariantFile):
             return dict(status=3,
                         msg="No alt allele")
 
-        if (len(filter_vals := variant.filter.keys()) != 1
-            or filter_val not in filter_vals):
+        # the lower operation ensures that pattern matching
+        # is not case sensitive
+        satisfy_filter_criterion = False
+        variant_filter_vals = []
+        for w in variant.filter.keys():
+            variant_filter_vals.append(w.lower())
 
+        for fval in filter_vals:
+            if fval.lower() in variant_filter_vals:
+                satisfy_filter_criterion = True
+                break
+
+        if not satisfy_filter_criterion:
             return dict(status=4,
-                        msg=("VCF filter value(s) does exclusively equal"
-                             f" the required input of {filter_val}"))
+                        msg=("VCF filter value(s) does not match"
+                             " required input of"
+                             f" ({','.join(filter_vals)})"))
 
 
         # Note that pysam returns None for missing alleles in
