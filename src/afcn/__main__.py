@@ -159,6 +159,17 @@ predict_parser.add_argument(
        log2 aFC point estimates per (gene, variant)
        pair.  See below for more details.
        """)
+predict_parser.add_argument("--filter",
+            default="PASS",
+            type=str,
+            nargs="+",
+            help="""Filter(s) that genotypes must meet to be
+                 inculded in the analysis.  Input is not"
+                 case sensitive, default pass""")
+
+
+
+
 predict_parser.add_argument(
         "-o",
         type=str,
