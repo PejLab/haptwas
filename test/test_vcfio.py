@@ -166,10 +166,11 @@ class TestFilters(unittest.TestCase):
         for rec in vcf_data.records:
             out = self.vcf.get_genotypes(rec.chrom,
                                          rec.pos-1,
-                                         ['pass','.'])
+                                         ['pass','.', 'missing'])
 
             if ((filt := rec.filter.lower()) == "pass"
-                or filt == "."):
+                or filt == "."
+                or filt == "missing"):
                 self.assertEqual(out["status"], 0)
                 continue
 

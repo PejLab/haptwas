@@ -125,6 +125,9 @@ class ParseGenotypes(VariantFile):
         for w in variant.filter.keys():
             variant_filter_vals.append(w.lower())
 
+        if len(variant_filter_vals) == 0 :
+            variant_filter_vals.append("missing")
+
         for fval in filter_vals:
             if fval.lower() in variant_filter_vals:
                 satisfy_filter_criterion = True

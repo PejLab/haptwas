@@ -164,7 +164,10 @@ predict_parser.add_argument("--filters",
             type=str,
             nargs="+",
             help="""Filter(s) that genotypes must meet to be
-                 inculded in the analysis.  Input is not"
+                 included in the analysis.  Note that if you 
+                 would like to include variants for which the VCF
+                 filter value is '.', include 'missing' as a
+                 filter value.  Input is not
                  case sensitive, default pass""")
 
 predict_parser.add_argument(
