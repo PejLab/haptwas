@@ -162,8 +162,10 @@ class ParseGenotypes(VariantFile):
                 # default entry is np.nan
                 if allele is None and idx is None:
                     continue
+
                 elif genotype_map[allele] is None:
                     genotype_map[allele] = idx
+
                 elif genotype_map[allele] != idx:
                     raise ValueError("Inconsistent indexing of"
                                      " alleles across samples")
