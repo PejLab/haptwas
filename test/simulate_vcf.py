@@ -75,10 +75,10 @@ class VCFMetaInfoLine(VCFMetaInfoABC):
 class VCFRecord:
     _col_delim = "\t"
     _phase_delim = "|"
-    _geno_entry_regex = "^[0-9\.][|/][0-9\.]:?\w*$"
-    _geno_phased_regex = "^[0-9\.]\|[0-9\.]:?\w*$"
-    _geno_biallelic_regex = "^[01\.][|/][01\.]:?\w*$"
-    _geno_entry_cap_group = "^([0-9\.])[|/]([0-9\.]):?\w*$"
+    _geno_entry_regex = "^[0-9.][|/][0-9.]:?\\w*$"
+    _geno_phased_regex = "^[0-9.]\\|[0-9.]:?\\w*$"
+    _geno_biallelic_regex = "^[01.][|/][01.]:?\\w*$"
+    _geno_entry_cap_group = "^([0-9.])[|/]([0-9.]):?\\w*$"
 
     def __init__(self, chrom, pos, id_, ref, alt, 
                  qual, filt, info, format_,
