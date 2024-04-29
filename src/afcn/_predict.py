@@ -44,33 +44,53 @@ def run(vcf, par_file, output_fname, filters):
 
             # get sample genotypes of each gene associated variant
             for i, v in enumerate(variants):
-                tmp = fvcf.get_genotypes(v[fpars.idx("chrom")],
-                                    v[fpars.idx("variant_pos")],
-                                    filter_vals=filters)
 
-                # what to do with missing data?
-                # alt alleles must match
-                if tmp["status"] != 0:
+                # recall that some vcf files have multiple records for a genetic locus.
+                # To handle such cases get_genotypes returns a list of
+                # records corresponding to that locus, each element of the list
+                # is a dictionary of genotype records for each sample.  Most of the
+                # time there will be a single record retrieved.
+                sample_genotype_records = fvcf.get_genotypes(v[fpars.idx("chrom")],
+                                                v[fpars.idx("variant_pos")],
+                                                filter_vals=filters)
 
-                    logging.info(f"contig:{v[fpars.idx('chrom')]}"
-                                 f"\tbed_pos:{v[fpars.idx('variant_pos')]}"
-                                 f"\tstatus:{tmp['status']}"
-                                 f"\tmsg:{tmp['msg']}")
-                    continue
+                # loop over records found for a specific locus.  Break the loop
+                # once the parameter file alt allele is a member of the vcf alt alleles
 
-                if (alt_allele := v[fpars.idx("alt")]) not in tmp["alts"]: 
+                logging_info = None
+                for samp_rec in sample_genotype_records:
 
-                    logging.info(f"contig:{v[fpars.idx('chrom')]}"
-                                 "\tbed_pos:"
-                                 f"{v[fpars.idx('variant_pos')]}"
-                                 "\tstatus:-1"
-                                 "\tmsg:Alt allele in bed file"
-                                 " not a member of alt alleles in VCF.")
-                    continue
+                    # what to do with missing data?
+                    # alt alleles must match
+                    if samp_rec["status"] != 0:
+    
+                        logging_info = (f"contig:{v[fpars.idx('chrom')]}"
+                                        f"\tbed_pos:{v[fpars.idx('variant_pos')]}"
+                                        f"\tstatus:{samp_rec['status']}"
+                                        f"\tmsg:{samp_rec['msg']}")
+                        continue
+
+                    if (alt_allele := v[fpars.idx("alt")]) in samp_rec["alts"]: 
+                        logging_info = None
+                        break
+
+                    else:
+                        logging_info = (f"contig:{v[fpars.idx('chrom')]}"
+                                        "\tbed_pos:"
+                                        f"{v[fpars.idx('variant_pos')]}"
+                                        "\tstatus:-1"
+                                        "\tmsg:Alt allele in bed file"
+                                        " not a member of alt alleles in VCF.")
                 
-                # TODO should I raise exception or just not include
-                # variant in analysis?
-                if not tmp["phased"]:
+                # if the loggin_info is not None, than the variant record 
+                # retrieval was not successful.  Continue the loop to the next
+                # variant
+                if logging_info is not None:
+                    logging.info(logging_info)
+                    continue
+
+
+                if not samp_rec["phased"]:
 
                     logging.info(f"contig:{v[fpars.idx('chrom')]}"
                                  f"\tbed_pos:{v[fpars.idx('variant_pos')]}"
@@ -79,17 +99,17 @@ def run(vcf, par_file, output_fname, filters):
 
                     continue
 
-                log2_afc[i] = v[fpars.idx("log2_afc")]
 
+                log2_afc[i] = v[fpars.idx("log2_afc")]
                 for hap_num in range(2):
 
-                    for n, allele_idx in enumerate(tmp["genotypes"][hap_num,:]):
+                    for n, allele_idx in enumerate(samp_rec["genotypes"][hap_num,:]):
 
                         if allele_idx == 0:
                             haplotypes[hap_num][n, i] = 0
                             continue
 
-                        if allele_idx == tmp["genotype_map"][alt_allele]:
+                        if allele_idx == samp_rec["genotype_map"][alt_allele]:
                             # alt allele in parameter bed file should be 1
 
                             haplotypes[hap_num][n, i] = 1
