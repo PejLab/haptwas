@@ -44,6 +44,7 @@ def run(vcf, par_file, output_fname, filters):
 
             # get sample genotypes of each gene associated variant
             for i, v in enumerate(variants):
+<<<<<<< HEAD
 
                 # recall that some vcf files have multiple records for a genetic locus.
                 # To handle such cases get_genotypes returns a list of
@@ -73,7 +74,6 @@ def run(vcf, par_file, output_fname, filters):
                     if (alt_allele := v[fpars.idx("alt")]) in samp_rec["alts"]: 
                         logging_info = None
                         break
-
                     else:
                         logging_info = (f"contig:{v[fpars.idx('chrom')]}"
                                         "\tbed_pos:"
@@ -98,7 +98,6 @@ def run(vcf, par_file, output_fname, filters):
                                  "\tmsg:Not phased")
 
                     continue
-
 
                 log2_afc[i] = v[fpars.idx("log2_afc")]
                 for hap_num in range(2):
