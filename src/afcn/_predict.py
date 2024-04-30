@@ -44,7 +44,6 @@ def run(vcf, par_file, output_fname, filters):
 
             # get sample genotypes of each gene associated variant
             for i, v in enumerate(variants):
-<<<<<<< HEAD
 
                 # recall that some vcf files have multiple records for a genetic locus.
                 # To handle such cases get_genotypes returns a list of
