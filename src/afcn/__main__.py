@@ -170,19 +170,73 @@ predict_parser.add_argument(
 
 # twas subcommand
 
-# twas_parser = subparsers.add_parser(
-#         "twas",
-#         help="""Perform transcriptome wide association study
-#         from gene expression predictions.""",
-#         formatter_class=argparse.RawDescriptionHelpFormatter,
-#         description="""
-# Given a set of gene expression predictions per individual, perform 
-# association tests between the predicted expression and a observed
-# phenotype.
-# """,
-#         epilog = """
-# OUTPUT FILE SPECIFICATION
-# """)
+twas_parser = subparsers.add_parser(
+        "twas",
+        help="""Perform transcriptome wide association study
+        from gene expression predictions.""",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description="""
+Given a set of gene expression predictions per individual, perform 
+association tests between the predicted expression and a observed
+phenotype.
+""",
+        epilog = """
+OUTPUT FILE SPECIFICATION
+""")
+
+twas_parser.add_argument(
+        "--pheno_column",
+        default=None,
+        type=int,
+        help="# TODO")
+twas_parser.add_argument(
+        '--pheno_name',
+        type=str,
+        default=None,
+        help="# TODO")
+
+twas_parser.add_argument(
+        "--filter_file",
+        type=str,
+        help="# TODO")
+twas_parser.add_argument(
+        '--filter_column',
+        type=int,
+        default=2)
+twas_parser.add_argument(
+        '--filter_val',
+        type=int,
+        default='1',
+        help="# TODO")
+
+twas_parser.add_argument(
+        "--pred_exp_file",
+        type=str,
+        help="Predicted gene expression bed file",
+
+twas_parser.add_argument(
+        '--test_type',
+        choices=["linear", "logistic"],
+        default='linear')
+
+twas_parser.add_argument(
+        '--missing_phenotype',
+        default=None,
+        type=float)
+twas_parser.add_argument(
+    "--drop_nans",
+    action="store_true",
+    help="Should nans be dropped from phenotype table")
+twas_parser.add_argument(
+    "--out",
+    type=str,
+    help="Print association results to file.")
+
+
+
+# ================================================================
+
+# parse input
 
 
 args = parser.parse_args(sys.argv[1:])
@@ -218,4 +272,10 @@ if args.subparser_name == "predict":
 if args.subparser_name == "twas":
     from . import _twas
 
-    _twas.run()
+    _twas.run(args.pheno_file, args.pheno_name,
+              args.filter_file, args.filter_column, args.filter_val,
+              args.pred_exp_file,
+              args.test_type,
+              args.missing_phenotype,
+              args.drop_nans,
+              args.out)
