@@ -46,93 +46,54 @@ class ParseGenotypes(VariantFile):
 
         return positions
 
-    def get_genotypes(self, contig, pos, filter_val="PASS"):
-        """Get array(s) of genotypes.
-
-        Extract the genotype{0,1,2,...,np.nan} for all samples
-        of at a specified locus. For a genotypes of a variant
-        to be considered phased, all samples must be phased.
-
-        Args:
-            contig: (str)
-                the contig in which the variant is located.
-            pos: (int)
-                assume 0 based indexing
-
-        Returns:
-            dict: 
-                {
-                    phased: (bool),
-                    genotypes: ((2, n_sample) np.ndarray)
-                    var_encodings: (dict)
-                        key value pairs of allele (A,T,C,G)
-                        and numeric value.  Missing genotypes
-                        are None
-                    status: (int)
-                    msg: (str)
-                }
-
-        where `status` and `msg` reports whether a variant that
-        satisfies our requirements is found, if not it reports
-        the incompatibility.
-
-        | status code    |  msg                           |
-        | -------------- | ------------------------------ |
-        | 0              | Success                        |
-        | 1              | More than one variant found.   |
-        | 2              | No variant found.              |
-        | 3              | No alt allele found.           |
-        | 4              | Filter mismatch                |
-        """
-
-        genotypes = np.full((2, self.n_samples), np.nan)
-        phased = True
-        
-        # Set i to None to detect when no variant is found.  When no
-        # variant is found the for loop below does not assign a value
-        # to i.
-        i = None
-
-        for i, variant in enumerate(self.fetch(contig, pos, pos+1)):
-            if i > 0:
-                return dict(status= 1,
-                            msg="More than one variant found")
-
-        # check whether a variant was found
-        if i is None:
-            return dict(status=2,
-                        msg="No variant found")
-
+    def _extract_genotype_from_pysam_record(self, record, filter_criteria):
         # return none if variant isn't an SNV, and doesn't pass
         # filter, capitilization matters:
         #   * deletion, e.g. Ref field = "."
         #   * more than one filter value
         #   * specified filter satsified
-        if variant.alts is None:
+
+        genotypes = np.full((2, self.n_samples), np.nan)
+
+        if record.alts is None:
+            return dict(status=2,
+                        msg=("NoAltAllele"
+                             f" VCF locus {record.contig}:{record.pos}"))
+
+        # the lower operation ensures that pattern matching
+        # is not case sensitive
+        satisfy_filter_criterion = False
+        record_filter_vals = []
+        for w in record.filter.keys():
+            record_filter_vals.append(w.lower())
+
+        if len(record_filter_vals) == 0 :
+            record_filter_vals.append("missing")
+
+        for fval in filter_criteria:
+            if fval.lower() in record_filter_vals:
+                satisfy_filter_criterion = True
+                break
+
+        if not satisfy_filter_criterion:
             return dict(status=3,
-                        msg="No alt allele")
+                        msg=("FilterMismatch VCF locus"
+                             f" {record.contig}:{record.pos}"
+                             f" filter values ({','.join(record_filter_vals)}),"
+                             f" valid filter values ({','.join(filter_criteria)})"))
 
-        if (len(filter_vals := variant.filter.keys()) != 1
-            or filter_val not in filter_vals):
-
-            return dict(status=4,
-                        msg=("VCF filter value(s) does exclusively equal"
-                             f" the required input of {filter_val}"))
-
-
-        # Note that pysam returns None for missing alleles in
-        # a sample
 
         # according to vcf4.4 specification
-        genotype_map = {variant.ref:0,
+        genotype_map = {record.ref:0,
                         None:np.nan}
 
 
-        for alt_allele in variant.alts:
+        for alt_allele in record.alts:
             genotype_map[alt_allele] = None
 
+        phased = True
 
-        for n, samp_geno in enumerate(variant.samples.itervalues()):
+        for n, samp_geno in enumerate(record.samples.itervalues()):
 
             # sets the alternative allele encodings
             for allele, idx in zip(samp_geno.alleles,
@@ -142,8 +103,10 @@ class ParseGenotypes(VariantFile):
                 # default entry is np.nan
                 if allele is None and idx is None:
                     continue
+
                 elif genotype_map[allele] is None:
                     genotype_map[allele] = idx
+
                 elif genotype_map[allele] != idx:
                     raise ValueError("Inconsistent indexing of"
                                      " alleles across samples")
@@ -161,6 +124,73 @@ class ParseGenotypes(VariantFile):
         return {"phased":phased,
                 "genotypes":genotypes,
                 "genotype_map":genotype_map,
-                "alts":variant.alts,
+                "ref":record.ref,
+                "alts":record.alts,
                 "status": 0,
                 "msg": "success"}
+
+
+    def get_genotypes(self, contig, pos, filter_vals=["PASS"]):
+        """Get array(s) of genotypes.
+
+        Extract the genotype{0,1,2,...,np.nan} for all samples
+        of at a specified locus. For a genotypes of a variant
+        to be considered phased, all samples must be phased.
+
+        Args:
+            contig: (str)
+                the contig in which the variant is located.
+            pos: (int)
+                assume 0 based indexing
+            filter_vals:(list)
+                list of strings specifing acceptable
+                variant filter value(s)
+
+        Returns:
+            list, one item per variant found at given locus,
+                of dictionaries as specified below:
+
+                dict: 
+                    {
+                        phased: (bool),
+                        genotypes: ((2, n_sample) np.ndarray)
+                        var_encodings: (dict)
+                            key value pairs of allele (A,T,C,G)
+                            and numeric value.  Missing genotypes
+                            are None
+                        status: (int)
+                        msg: (str)
+                    }
+
+        where `status` and `msg` reports whether a variant that
+        satisfies our requirements is found, if not it reports
+        the incompatibility.
+
+        | status code    |  msg class                     |
+        | -------------- | ------------------------------ |
+        | 0              | Success                        |
+        | 1              | VariantNotFound                |
+        | 2              | NoAltAllele                    |
+        | 3              | FilterMismatch                 |
+        """
+
+        if not isinstance(filter_vals, list):
+            raise TypeError("Input filter value must be a Python list")
+
+        
+        # Set i to None to detect when no variant is found.  When no
+        # variant is found the for loop below does not assign a value
+        # to i.
+        records = self.fetch(contig, pos, pos+1)
+
+        rec = None
+
+        for rec in records:
+
+            yield self._extract_genotype_from_pysam_record(rec, filter_vals)
+
+        if rec is None:
+
+            yield dict(status=1,
+                        msg=("VariantNotFound at locus"
+                        f" {contig}:{pos} not in VCF."))

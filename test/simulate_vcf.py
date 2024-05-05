@@ -75,10 +75,10 @@ class VCFMetaInfoLine(VCFMetaInfoABC):
 class VCFRecord:
     _col_delim = "\t"
     _phase_delim = "|"
-    _geno_entry_regex = "^[0-9\.][|/][0-9\.]:?\w*$"
-    _geno_phased_regex = "^[0-9\.]\|[0-9\.]:?\w*$"
-    _geno_biallelic_regex = "^[01\.][|/][01\.]:?\w*$"
-    _geno_entry_cap_group = "^([0-9\.])[|/]([0-9\.]):?\w*$"
+    _geno_entry_regex = "^[0-9.][|/][0-9.]:?\\w*$"
+    _geno_phased_regex = "^[0-9.]\\|[0-9.]:?\\w*$"
+    _geno_biallelic_regex = "^[01.][|/][01.]:?\\w*$"
+    _geno_entry_cap_group = "^([0-9.])[|/]([0-9.]):?\\w*$"
 
     def __init__(self, chrom, pos, id_, ref, alt, 
                  qual, filt, info, format_,
@@ -198,6 +198,9 @@ class VCFDataSet:
               VCFRecord("chrm10",101003,"var_5", "T", "A", 21, "PASS", 
                         "SD=12;RD=52", "GT:GQ", 
                         ["0|0:34", "1/1:20","1|0:21"]),
+              VCFRecord("chrm10",101003,"var_5", "T", "A", 21, "PASS", 
+                        "SD=12;RD=52", "GT:GQ", 
+                        ["0|0:34", "1/1:20","1|0:21"]),
               VCFRecord("chrm10",101004,"var_none_0", "T", "A", 21, "PASS", 
                         "SD=12;RD=52", "GT:GQ", 
                         ["0|0:34", "1/1:20",".|0:21"]),
@@ -212,7 +215,10 @@ class VCFDataSet:
                         ["0|0:34", "1|1:20","1|0:21"]),
               VCFRecord("chrm10",101103,"var_7", "T", "A", 21, "q10", 
                         "SD=12;RD=52", "GT:GQ", 
-                        ["0|0:34", "1/1:20","1|0:21"])]
+                        ["0|0:34", "1/1:20","1|0:21"]),
+              VCFRecord("chrm10",101105,"var_8", "T", "A", 21, ".", 
+                        "SD=12;RD=52", "GT:GQ", 
+                        ["0|0:34", "1|1:20","1|0:21"])]
 
     def __str__(self):
         output_string = ""

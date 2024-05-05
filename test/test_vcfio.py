@@ -54,89 +54,92 @@ class TestVCF(unittest.TestCase):
             if record.is_phased():
                 continue
 
-            out = self.vcf.get_genotypes(record.chrom,
+            outputs = self.vcf.get_genotypes(record.chrom,
                                          record.pos-1)
 
-            if not record.is_qc_passed():
-                self.assertNotEqual(out["status"], 0)
-                continue
+            for out in outputs:
+                if not record.is_qc_passed():
+                    self.assertNotEqual(out["status"], 0)
+                    continue
 
-            self.assertFalse(out["phased"])
+                self.assertFalse(out["phased"])
 
-            self.assertEqual(len(out["alts"]),
-                             len(record.alt))
+                self.assertEqual(len(out["alts"]),
+                                 len(record.alt))
 
-            for alt_allele in out["alts"]:
-                self.assertIn(alt_allele, record.alt)
+                for alt_allele in out["alts"]:
+                    self.assertIn(alt_allele, record.alt)
 
-            for alt_allele in record.alt:
-                self.assertIn(alt_allele, out["alts"])
+                for alt_allele in record.alt:
+                    self.assertIn(alt_allele, out["alts"])
 
 
-            self.assertTupleEqual(record.genotypes.shape,
-                                  out["genotypes"].shape)
+                self.assertTupleEqual(record.genotypes.shape,
+                                      out["genotypes"].shape)
 
-            for hap_num in range(2):
-                for data_val, true_val in zip(out["genotypes"][hap_num,:],
-                                              record.genotypes[hap_num,:]):
-                    if np.isnan(true_val):
-                        self.assertTrue(np.isnan(data_val))
-                    else:
-                        self.assertEqual(data_val, true_val)
+                for hap_num in range(2):
+                    for data_val, true_val in zip(out["genotypes"][hap_num,:],
+                                                  record.genotypes[hap_num,:]):
+                        if np.isnan(true_val):
+                            self.assertTrue(np.isnan(data_val))
+                        else:
+                            self.assertEqual(data_val, true_val)
 
     def test_genotype_failed_query(self):
         """Verify that None for filtered variants.
         """
         for record in vcf_data.records:
 
-            out = self.vcf.get_genotypes(record.chrom,
+            outputs = self.vcf.get_genotypes(record.chrom,
                                          record.pos-1)
 
-            if record.alt == '.':
-                self.assertEqual(out["status"], 3)
-            elif record.filter != "PASS":
-                self.assertEqual(out["status"], 4)
-            else:
-                for allele in out["alts"]:
-                    self.assertIn(allele, record.alt)
+            for out in outputs:
+                if record.alt == '.':
+                    self.assertEqual(out["status"], 2)
+                elif record.filter != "PASS":
+                    self.assertEqual(out["status"], 3)
+                else:
+                    for allele in out["alts"]:
+                        self.assertIn(allele, record.alt)
 
-                self.assertEqual(out["status"], 0)
+                    self.assertEqual(out["status"], 0)
 
 
     def test_genotype_phased_data(self):
         """Verify genotype records for phased data."""
 
         for record in vcf_data.records:
-            out = self.vcf.get_genotypes(record.chrom,
+            outputs = self.vcf.get_genotypes(record.chrom,
                                          record.pos-1)
 
-            if not record.is_qc_passed():
-                self.assertNotEqual(out["status"], 0)
-                continue
+            for out in outputs:
+                if not record.is_qc_passed():
+                    self.assertNotEqual(out["status"], 0)
+                    continue
 
-            if not record.is_phased():
-                self.assertFalse(out["phased"])
-                continue
+                if not record.is_phased():
+                    self.assertFalse(out["phased"])
+                    continue
 
-            self.assertTrue(out["phased"])
+                self.assertTrue(out["phased"])
 
-            for allele in out["alts"]:
-                self.assertIn(allele, record.alt)
+                for allele in out["alts"]:
+                    self.assertIn(allele, record.alt)
 
-            true_genotypes = record.genotypes
+                true_genotypes = record.genotypes
 
-            self.assertTupleEqual(out["genotypes"].shape, (2, len(self.vcf.samples)))
+                self.assertTupleEqual(out["genotypes"].shape, (2, len(self.vcf.samples)))
 
-            for i in range(len(record.samples)):
-                if np.isnan(true_genotypes[0, i]):
-                    self.assertTrue(np.isnan(out["genotypes"][0,i]))
-                else:
-                    self.assertEqual(true_genotypes[0, i], out["genotypes"][0, i])
+                for i in range(len(record.samples)):
+                    if np.isnan(true_genotypes[0, i]):
+                        self.assertTrue(np.isnan(out["genotypes"][0,i]))
+                    else:
+                        self.assertEqual(true_genotypes[0, i], out["genotypes"][0, i])
 
-                if np.isnan(true_genotypes[1, i]):
-                    self.assertTrue(np.isnan(out["genotypes"][1,i]))
-                else:
-                    self.assertEqual(true_genotypes[1, i], out["genotypes"][1, i])
+                    if np.isnan(true_genotypes[1, i]):
+                        self.assertTrue(np.isnan(out["genotypes"][1,i]))
+                    else:
+                        self.assertEqual(true_genotypes[1, i], out["genotypes"][1, i])
 
     def test_no_variants_found(self):
         """Verify genotype records for phased data."""
@@ -146,9 +149,38 @@ class TestVCF(unittest.TestCase):
         for record in vcf_data.records:
             break
 
-        out = self.vcf.get_genotypes(record.chrom, 1)
-        self.assertEqual(out["status"], 2)
+        outputs = self.vcf.get_genotypes(record.chrom, 1)
+        for out in outputs:
+            self.assertEqual(out["status"], 1)
+
+
+class TestFilters(unittest.TestCase):
+    def setUp(self):
+        self.vcf = vcfio.ParseGenotypes(vcf_name, "r")
         
+    def test_list_requirement(self):
+        rec = vcf_data.records[0]
+
+        with self.assertRaises(TypeError):
+            next(self.vcf.get_genotypes(rec.chrom,
+                                   rec.pos-1,
+                                   filter_vals = rec.filter))
+
+    def test_list_inputs(self):
+        for rec in vcf_data.records:
+            outputs = self.vcf.get_genotypes(rec.chrom,
+                                         rec.pos-1,
+                                         ['pass','.', 'missing'])
+
+            for out in outputs:
+                if ((filt := rec.filter.lower()) == "pass"
+                    or filt == "."
+                    or filt == "missing"):
+                    self.assertEqual(out["status"], 0)
+                    continue
+
+                self.assertNotEqual(out["status"], 0)
+
 
 if __name__ == "__main__":
     unittest.addModuleCleanup(tearDownModule)
