@@ -20,7 +20,7 @@ from scipy.stats import norm
 
 
 def read_pheno(pheno_file):
-    pheno = pd.read_csv(pheno_file, header=None)
+    pheno = pd.read_csv(pheno_file, header=None, sep="\t")
     if pheno.iloc[0, 0] == "ID":
         pheno.columns = pheno.iloc[0]
         pheno = pheno.iloc[1:]
@@ -31,21 +31,21 @@ def reduce_pheno(pheno, pheno_name=None):
         pheno = pheno[['ID', pheno_name]]
     else:
         pheno = pheno[['ID', pheno.columns[-1]]]
-    pheno.columns = ["id", "phenotype"]
+    pheno.columns = ["ID", "phenotype"]
     pheno["phenotype"] = pd.to_numeric(pheno["phenotype"])
     return pheno
 
 def read_filter(filter_file, filter_column=3):
-    fil = pd.read_csv(filter_file, header=None)
+    fil = pd.read_csv(filter_file, header=None, sep="\t")
     if fil.iloc[0, 0] == "ID":
         fil.columns = fil.iloc[0]
         fil = fil.iloc[1:]
     fil = fil[['ID', fil.columns[filter_column-1]]]
-    fil.columns = ["id", "fil_val"]
+    fil.columns = ["ID", "fil_val"]
     return fil
 
 def read_predicted(pred_exp_file):
-    pred_exp = pd.read_csv(pred_exp_file)
+    pred_exp = pd.read_csv(pred_exp_file, sep="\t")
     return pred_exp
 
 # The predicted expression was written in the following format:
@@ -68,7 +68,7 @@ import statsmodels.api as sm
 from scipy.stats import norm
 
 def association(merged, genes, test_type="linear"):
-    assoc_df = pd.DataFrame(columns=["gene", "beta", "statistic", "p", "se(beta)"])  # Initialize as an empty DataFrame
+    assoc_df = pd.DataFrame(columns=["gene", "beta", "statistic", "p", "se(beta)"])  
 
     for gene in genes:
         X = sm.add_constant(merged[[gene]])  # Add a constant term for the intercept
@@ -76,16 +76,20 @@ def association(merged, genes, test_type="linear"):
 
         if test_type == "logistic":
             model = sm.Logit(y, X)
-            result = model.fit(disp=0)  # Suppress display to prevent printing
+            try:
+                result = model.fit_regularized(method='l1')
+            except Exception as e:
+                print(f"Error fitting gene {gene}: {e}")
+                continue
             beta = result.params[gene]
-            stat = result.tvalues[gene] if hasattr(result, 'tvalues') else None  # Using z-values for logistic regression
+            stat = result.tvalues[gene] if hasattr(result, 'tvalues') else None
             p = result.pvalues[gene] if hasattr(result, 'pvalues') else None
             se = result.bse[gene] if hasattr(result, 'bse') else None
         else:
             model = sm.OLS(y, X)
             result = model.fit()
             beta = result.params[gene]
-            stat = result.tvalues[gene] if hasattr(result, 'tvalues') else None # Using t-values for linear regression
+            stat = result.tvalues[gene] if hasattr(result, 'tvalues') else None
             p = result.pvalues[gene] if hasattr(result, 'pvalues') else None
             se = result.bse[gene] if hasattr(result, 'bse') else None
 
