@@ -2,6 +2,9 @@
 
 # 🚧 Under Construction 🚧
 
+TODO: fix file specification inclusion, github markdown
+    does not support the inclusion of different markdown files
+
 # Inferring allele Fold Change (aFC) from phased data
 
 Mohammadi et al. 2017 [1] defined allele fold change (aFC) as the 
