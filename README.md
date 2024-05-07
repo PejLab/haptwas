@@ -64,6 +64,10 @@ $$
 where $\epsilon\sim\mathcal{N}(0,\sigma^2)$.
 
 
+## File specifications
+
+[include](file:src/afcn/_spec_gene_expression.md)
+
 
 ## References
 
