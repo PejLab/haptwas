@@ -244,7 +244,7 @@ if args.version:
 if args.subparser_name == "fit":
     from . import _fit
 
-    _fit.run()
+    _fit.run(args.vcf, args.expr, args.genvar, args.o)
 
 
 if args.subparser_name == "predict":
