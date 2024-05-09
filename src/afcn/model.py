@@ -176,11 +176,11 @@ def _obj(haplotype_one, haplotype_two, y, reg, reg_const):
 
         _penalty_func = lambda k: 0
 
-    elif reg == 'l1':
+    elif reg == 'l1' and isinstance(reg_const, numbers.Number):
 
         _penalty_func = lambda k: reg_const * np.sum(np.abs(k))
 
-    elif reg == "l2":
+    elif reg == "l2" and isinstance(reg_const, numbers.Number):
 
         _penalty_func = lambda k: reg_const * k @ k
 
@@ -217,10 +217,28 @@ def fit(haplotype_one, haplotype_two, y, reg=None, reg_const=None):
     Returns:
        out 
     """
+    # validate input for common mistakes
+    if (not utils.is_biallelic(haplotype_one) 
+        or not utils.is_biallelic(haplotype_two)):
+
+        raise ValueError("Input haplotypes are not biallelic, e.g. (0,1,np.nan)")
+
+    if haplotype_one.shape != haplotype_two.shape:
+        raise ValueError("haplotypes are not identical dimension")
+
+    if haplotype_one.shape[0] != y.size:
+        raise ValueError("Number of samples in haplotype don't match predictions")
+
+    if (y < 0).any():
+        raise ValueError("Gene counts can't be negative")
+
+
+    # find initial parameters values
     lout = _linear_expansion_model(haplotype_one,
                                    haplotype_two,
                                    y)
 
+    # nonlinear optimization
     objective = _obj(haplotype_one, haplotype_two,
                      np.log(y+1),
                      reg, reg_const)
