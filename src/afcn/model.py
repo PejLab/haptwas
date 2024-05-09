@@ -104,7 +104,7 @@ def simulate(hap_one, hap_two, alpha, beta, sd, seed=None):
 
 
 def _linear_expansion_model(haplotype_one, haplotype_two, y):
-    """Linear regression
+    """Linear regression using the Pseudo-inverse
 
     The linearized model is the first order Taylor expansion
     about all parameters equal to zero.  Under this linear
@@ -123,7 +123,6 @@ def _linear_expansion_model(haplotype_one, haplotype_two, y):
         (dict)
             "pars": parameters values
             "rank" : rank of linearized matrix X
-            "version": version of model.py file
     """
     n_samples = y.size
     genotypes = haplotype_one + haplotype_two
@@ -162,21 +161,47 @@ def _linear_expansion_model(haplotype_one, haplotype_two, y):
         }
 
 
-def _obj(haplotype_one, haplotype_two, y):
+
+def _obj(haplotype_one, haplotype_two, y, reg, reg_const):
     """Function closure for least squares optimization.
 
     Return 
         function
     """
+
+    if reg is not None:
+        reg = reg.lower()
+
+    if reg is None and reg_const is None:
+
+        _penalty_func = lambda k: 0
+
+    elif reg == 'l1':
+
+        _penalty_func = lambda k: reg_const * np.sum(np.abs(k))
+
+    elif reg == "l2":
+
+        _penalty_func = lambda k: reg_const * k @ k
+
+    else:
+        raise ValueError(f"{reg} and {reg_const} are invalid"
+                        " regularization method and constant pair")
+    
+
     def _g(k):
-        return np.sum((y 
-            - np.log(1 
-                     + _predict(haplotype_one,haplotype_two, k[0], k[1:])))**2)
+
+        return (np.sum((y 
+            - np.log(1 + _predict(haplotype_one,
+                               haplotype_two,
+                               k[0],
+                               k[1:])))**2)
+            + _penalty_func(k))
 
     return _g
 
 
-def fit(haplotype_one, haplotype_two, y):
+def fit(haplotype_one, haplotype_two, y, reg=None, reg_const=None):
     """Fit isoform abundances, + pseudo count, to isoform model.
 
     Fits data using Newton-CG minimizer
@@ -196,7 +221,9 @@ def fit(haplotype_one, haplotype_two, y):
                                    haplotype_two,
                                    y)
 
-    objective = _obj(haplotype_one, haplotype_two, np.log(y+1))
+    objective = _obj(haplotype_one, haplotype_two,
+                     np.log(y+1),
+                     reg, reg_const)
 
     jacobian = utils.Gradient(objective)
     hessian = utils.Hessian(objective)
