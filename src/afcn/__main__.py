@@ -3,6 +3,8 @@
 By: Genomic Data Modeling Laboratory
 """
 
+LOG_SUFFIX = ".log"
+
 import sys
 import os
 import argparse
@@ -88,7 +90,7 @@ fit_parser.add_argument("--genvar",
 fit_parser.add_argument("-o",
                         type=str,
                         default=None,
-                        help=("Name of file to print results"))
+                        help=("Path and file prefix to print results and logs"))
 
 
 # ================================================================
@@ -228,7 +230,7 @@ args = parser.parse_args(sys.argv[1:])
 if args.o is None:
     args.o = args.subparser_name
 
-logging.basicConfig(filename=f"{args.o}.log",
+logging.basicConfig(filename=f"{args.o}{LOG_SUFFIX}",
                 level=logging.INFO,
                 filemode="w",
                 format="%(levelname)s\t%(asctime)s\t%(message)s",

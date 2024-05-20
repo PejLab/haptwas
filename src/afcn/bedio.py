@@ -19,6 +19,7 @@ from . import utils
 # TODO where to write specification so that it is callable 
 # to __main__.py and this code
 
+BED_SUFFIX = ".bed"
 
 def open_param(filename, mode):
     """Open either gzipped or normal text file for reading.
@@ -47,6 +48,9 @@ def open_param(filename, mode):
 
     elif mode == "r" and filename.endswith(".bed.gz"):
         return ParseParamBed(gzip.GzipFile(filename))
+
+    if mode == "w" and filename.endswith(".bed"):
+        return WriteParamBed(io.FileIO(filename, mode))
 
     raise NotImplementedError
 
@@ -84,32 +88,6 @@ class BedSpec:
         self.header = None
         self._colname_to_idx  = dict()
 
-
-# TODO should I add intercept term?
-
-class ParamBedSpec(BedSpec):
-    _req_header_fields = OrderedDict(chrom = str,
-                                     qtl_start = int,
-                                     qtl_end = int,
-                                     qtl_id = str,
-                                     gene_start = int,
-                                     gene_end = int,
-                                     gene_id = str,
-                                     variant_pos = int,
-                                     variant_id = str,
-                                     ref = str,
-                                     alt = str,
-                                     log2_afc = float)
-
-
-class ParseParamBedABC(ParamBedSpec):
-    """Enforce parameter bed file specification."""
-
-    def __init__(self):
-        super().__init__()
-
-        self._initialize()
-
     def __iter__(self):
         return self
 
@@ -120,7 +98,8 @@ class ParseParamBedABC(ParamBedSpec):
         return self
 
     def __exit__(self, *args):
-        self.close()
+        if not self.closed:
+            self.close()
 
     def tell(self):
         return self._fid.tell()
@@ -137,11 +116,60 @@ class ParseParamBedABC(ParamBedSpec):
             self._fid.flush()
             self._fid.close()
 
-    def _initialize(self):
-        """Load and validate meta data and header as defined in spec."""
+
+class ExpressionQTLBedSpec(BedSpec):
+    _req_header_fields = OrderedDict(chrom = str,
+                                     qtl_start = int,
+                                     qtl_end = int,
+                                     qtl_id = str,
+                                     gene_start = int,
+                                     gene_end = int,
+                                     gene_id = str,
+                                     variant_pos = int,
+                                     variant_id = str,
+                                     ref = str,
+                                     alt = str)
+
+
+class ParamBedABC(ExpressionQTLBedSpec):
+    """Enforce parameter bed file specification."""
+
+    def __init__(self):
+        super().__init__()
+
+        self._req_header_fields["log2_afc"] = float
+        self._req_header_fields["sem"] = float
+        self._req_header_fields["p_val"] = float
+
         for idx, col_name in enumerate(self._req_header_fields.keys()):
             self._colname_to_idx[col_name] = idx
 
+
+class ParseParamBed(ParamBedABC):
+    def __init__(self, fid):
+
+        self._fid = fid
+
+        # recall that the order of class methods being called is:
+        #   1. __init__
+        #   2. __enter__
+        #   3. __exit__
+        # If there exists an error in __init__ or __enter__, the __exit__
+        # method is not guaranteed to run.  Consequently, I use the try block.
+        try:
+
+            super().__init__()
+            self._initialize()
+
+        except Exception:
+
+            self.__exit__()
+            raise
+
+    def _initialize(self):
+        """Load and validate meta data and header as defined in spec."""
+
+        # load meta data 
         for par_line in self:
 
             if not par_line.startswith(self._meta_prefix):
@@ -160,8 +188,14 @@ class ParseParamBedABC(ParamBedSpec):
         # decompose header and verify it is spec. compliant
         # remember that for empty files par_line is not associated 
         # with any value and throws an UnboundLocalError
+        if not par_line.startswith(self._header_prefix):
+            raise ValueError("Header required: No file header found")
+
+
         try:
+            
             par_line = par_line.removeprefix(self._header_prefix)
+
         except UnboundLocalError as err:
             # the add_note method is available on Python 3.11 +
             #err.add_note(("\nMost likely reason for failure is that "
@@ -235,22 +269,130 @@ class ParseParamBedABC(ParamBedSpec):
             yield k, list(g)
 
 
-class ParseParamBed(ParseParamBedABC):
+# TODO
+class WriteParamBed(ParamBedABC):
+    def __init__(self, fid):
+
+        self._fid = fid
+        
+        try:
+
+            super().__init__()
+
+            self._meta_and_header_written = False
+
+            self.meta["data"] = "Inferred afc model parameters."
+
+        except Exception:
+
+            self.__exit__()
+            raise
+
+
+    def write_meta_and_header_data(self, sample_names):
+        # instantiate string
+        s = ""
+
+        # construct meta data
+        for key, val in self.meta.items():
+            s += "".join([self._meta_prefix,
+                          key,
+                          self._meta_data_key_val_delimiter,
+                          val,
+                          self._new_line])
+
+        # construct header
+        s += self._header_prefix
+        s += self._field_delimiter.join(*self._req_header_fields.keys())
+        s = s.encode(encoding=self._encoding)
+
+        if self._fid.write(s) != len(s):
+            raise RuntimeError("Bytes written not equal to bytes of string.")
+
+        self._meta_and_header_written = True
+
+    def write_line_record(self):
+        """Write line of predictions.
+
+        Args:
+            chrom: (str) chromosome name
+            qtl_start: (int) genomic coordinate of gene beginning
+            qtl_end: (int) genomic coordinate of gene end
+            qtl_id: (str)
+            gene_star: (int)
+            gene_end: (int)
+            gene_id: (int) Ensembl gene id
+            variant_pos: (int) Single nucleotide polymorphism
+            variant_id: (str),
+            ref: (str), reference allele
+            alt: (str), alternative allele
+            log2_afc: (float)
+            log2_afc_sem: (float)
+            log2_afc_p_value: (float)
+
+
+        Returns:
+            None
+        """
+        pass
+#         if not self._meta_and_header_written:
+#             raise ValueError("Write meta data before real data")
+# 
+#         data_str = self._field_delimiter.join([str(w) for w in data])
+#         chrom = self._new_line + chrom
+# 
+#         record_str = self._field_delimiter.join([chrom, 
+#                                                 str(start), 
+#                                                 str(end), 
+#                                                 name,
+#                                                 data_str])
+#         record_str = record_str.encode(encoding=self._encoding)
+# 
+#         if self._fid.write(record_str) != len(record_str):
+#             raise RuntimeError("Bytes written not equal to bytes of string.")
+
+def read_gene_variant_map(filename):
+    if filename.endswith(".bed"):
+        return ParseGeneVariant(io.FileIO(filename))
+
+    if filename.endswith(".bed.gz"):
+        return ParseGeneVariantMap(gzip.GzipFile(filename))
+
+    raise NotImplementedError
+
+
+# TODO
+
+class ParseGeneVariantMap(ExpressionQTLBedSpec):
     def __init__(self, fid):
 
         self._fid = fid
 
-        try:
-            super().__init__()
-        except:
-            self.close()
-            raise
+        super().__init__()
+
+        self._initialize()
+
+    def _initialize(self):
+        pass
+
+    def group_by(self, ):
+        pass
+    
+
+def read_gene_expression(filename):
+    if filename.endswith(".bed"):
+        return ParseGeneExpression(io.FileIO(filename))
+
+    if filename.endswith(".bed.gz"):
+        return ParseGeneExpression(gzip.GzipFile(filename))
+
+    raise NotImplementedError
 
 
-# TODO
-class WriteParamBed(ParamBedSpec):
-    def __init__(self):
-        raise NotImplementedError
+class ParseGeneExpression(ExpressionQTLBedSpec):
+    def __init__(self, filename):
+        pass
+
 
 
 def open_predict(filename, mode):

@@ -1,6 +1,6 @@
 ### SPECIFICATION: GENVAR FILE
 
-BED 4 file with meta data and header as follows:
+BED 3 file with meta data and header as follows:
 
 * line [0, n): meta data prepended with ##
 * line n: header prepended with #
@@ -13,7 +13,6 @@ Contents:
     - chrom, 
     - qtl_start: (int) minimum(variant position, gene position)
     - qtl_end: (int) maximum(variant position, gene position)
-    - qtl_id: (string) gene_id/variant_id
 * custom fields:
     - gene_start: (integer) start of genomic feature
     - gene_end: (integer) end of genomic feature
