@@ -77,7 +77,7 @@ def association(merged, genes, test_type="linear"):
         if test_type == "logistic":
             model = sm.Logit(y, X)
             try:
-                result = model.fit_regularized(method='l1')
+                result = model.fit_regularized(method='l1', disp=False)
             except Exception as e:
                 print(f"Error fitting gene {gene}: {e}")
                 continue
@@ -87,7 +87,7 @@ def association(merged, genes, test_type="linear"):
             se = result.bse[gene] if hasattr(result, 'bse') else None
         else:
             model = sm.OLS(y, X)
-            result = model.fit()
+            result = model.fit(disp=False)
             beta = result.params[gene]
             stat = result.tvalues[gene] if hasattr(result, 'tvalues') else None
             p = result.pvalues[gene] if hasattr(result, 'pvalues') else None
