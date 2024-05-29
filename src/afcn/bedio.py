@@ -59,6 +59,7 @@ class BedSpec:
 
     _header_prefix = "#"
 
+    _hap_delimiter = "|"
     _field_delimiter = "\t"
     _new_line = "\n"
 
@@ -324,7 +325,8 @@ class WritePredictionBed(PredictionBedABC):
 
         self._meta_and_header_written = True
 
-    def write_line_record(self, chrom, start, end, name, data):
+    def write_line_record(self, chrom, start, end, name,
+                          hap_one_predictions, hap_two_predictions):
         """Write line of predictions.
 
         Args:
@@ -332,8 +334,12 @@ class WritePredictionBed(PredictionBedABC):
             start: (int) genomic coordinate of gene beginning
             end: (int) genomic coordinate of gene end
             name: (str) gene id
-            data: ((n sample, ) np.ndarray) of floats representing predicted
-                gene expression.
+            hap_one_predictions: ((n sample,) np.ndarray)
+                of floats representing predicted gene expression
+                from haplotype one
+            hap_two_predictions: ((n sample,) np.ndarray)
+                of floats representing predicted gene expression
+                from haplotype two
 
         Returns:
             None
@@ -341,7 +347,11 @@ class WritePredictionBed(PredictionBedABC):
         if not self._meta_and_header_written:
             raise ValueError("Write meta data before real data")
 
-        data_str = self._field_delimiter.join([str(w) for w in data])
+        data_str = []
+        for h1, h2 in zip(hap_one_predictions, hap_two_predictions):
+            data_str.append(self._hap_delimiter.join([str(h1), str(h2)]))
+
+        data_str = self._field_delimiter.join(data_str)
         chrom = self._new_line + chrom
 
         record_str = self._field_delimiter.join([chrom, 

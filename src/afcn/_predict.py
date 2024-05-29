@@ -45,17 +45,19 @@ def run(vcf, par_file, output_fname, filters):
             # get sample genotypes of each gene associated variant
             for i, v in enumerate(variants):
 
-                # recall that some vcf files have multiple records for a genetic locus.
+                # recall that some vcf files have multiple records for
+                # a genetic locus.
                 # To handle such cases get_genotypes returns a list of
                 # records corresponding to that locus, each element of the list
-                # is a dictionary of genotype records for each sample.  Most of the
-                # time there will be a single record retrieved.
+                # is a dictionary of genotype records for each sample.  Most
+                # of the time there will be a single record retrieved.
                 sample_genotype_records = fvcf.get_genotypes(v[fpars.idx("chrom")],
                                                 v[fpars.idx("variant_pos")],
                                                 filter_vals=filters)
 
                 # loop over records found for a specific locus.  Break the loop
-                # once the parameter file alt allele is a member of the vcf alt alleles
+                # once the parameter file alt allele is a member of the vcf
+                # alt alleles
 
                 logging_info = None
                 for samp_rec in sample_genotype_records:
@@ -113,10 +115,10 @@ def run(vcf, par_file, output_fname, filters):
                             haplotypes[hap_num][n, i] = 1
 
 
-            gene_expr = model.predict(haplotypes[0],
-                                      haplotypes[1],
-                                      log2_reference_expression,
-                                      log2_afc)
+            model.predict(haplotypes[0],
+                                            haplotypes[1],
+                                            log2_reference_expression,
+                                            log2_afc)
 
             # not all rec values from this iteration of
             # record should
@@ -126,6 +128,11 @@ def run(vcf, par_file, output_fname, filters):
                                    v[fpars.idx("gene_start")],
                                    v[fpars.idx("gene_end")],
                                    gene_id,
-                                   gene_expr)
+                                   model.predict(haplotypes[0],
+                                            log2_reference_expression,
+                                            log2_afc),
+                                   model.predict(haplotypes[1],
+                                            log2_reference_expression,
+                                            log2_afc))
 
     logging.info("End predictions")
