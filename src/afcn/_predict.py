@@ -115,11 +115,6 @@ def run(vcf, par_file, output_fname, filters):
                             haplotypes[hap_num][n, i] = 1
 
 
-            model.predict(haplotypes[0],
-                                            haplotypes[1],
-                                            log2_reference_expression,
-                                            log2_afc)
-
             # not all rec values from this iteration of
             # record should
             # have identical genomic coordinates.
