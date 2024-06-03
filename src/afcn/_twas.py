@@ -12,11 +12,12 @@ contributors:
 
 """
 
-import pandas as pd
+import logging
 import numpy as np
+from scipy.stats import norm
+import pandas as pd
 from sklearn.linear_model import LogisticRegression, LinearRegression
 import statsmodels.api as sm
-from scipy.stats import norm
 
 
 def read_pheno(pheno_file):
@@ -62,10 +63,6 @@ def merge_and_filter(pheno, pred_exp, fil=None, filter_val=1):
         merged = merged[merged["fil_val"] == filter_val]
     return merged
 
-import statsmodels.api as sm
-
-import statsmodels.api as sm
-from scipy.stats import norm
 
 def association(merged, genes, test_type="linear"):
     assoc_df = pd.DataFrame(columns=["gene", "beta", "statistic", "p", "se(beta)"])  
@@ -76,16 +73,21 @@ def association(merged, genes, test_type="linear"):
 
         if test_type == "logistic":
             model = sm.Logit(y, X)
+
             try:
                 result = model.fit_regularized(method='l1', disp=False)
+
             except Exception as e:
-                print(f"Error fitting gene {gene}: {e}")
+                logging.info(f"Error fitting gene {gene}: {e}")
                 continue
+
             beta = result.params[gene]
             stat = result.tvalues[gene] if hasattr(result, 'tvalues') else None
             p = result.pvalues[gene] if hasattr(result, 'pvalues') else None
             se = result.bse[gene] if hasattr(result, 'bse') else None
+
         else:
+
             model = sm.OLS(y, X)
             result = model.fit(disp=False)
             beta = result.params[gene]
@@ -103,9 +105,6 @@ def association(merged, genes, test_type="linear"):
 
     return assoc_df
 
-def write_association(assoc_df, output_file):
-    assoc_df.to_csv(output_file, index=False)
-
 def run(pheno_file, pheno_name,
         filter_file, filter_column, filter_val,
         pred_exp_file,
@@ -113,8 +112,9 @@ def run(pheno_file, pheno_name,
         missing_phenotype,
         drop_nans,
         file_out):
-    # Get Arguments
     
+    logging.info("Begin associations")
+
     # Run functions
     pheno = read_pheno(pheno_file)
     pheno = reduce_pheno(pheno, pheno_name)
@@ -145,5 +145,8 @@ def run(pheno_file, pheno_name,
         raise ValueError("Logsitic regression requires binary phenotypes")
     
     assoc_df = association(merged, genes, test_type)
-    write_association(assoc_df, file_out)
-    print("Done. Results saved in", file_out)
+
+    # write associations to file
+    assoc_df.to_csv(file_out, index=False)
+
+    logging.info(f"Done. Results saved in {file_out}")

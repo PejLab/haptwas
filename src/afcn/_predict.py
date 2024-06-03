@@ -12,26 +12,29 @@ from . import bedio
 from . import vcfio
 
 
-def run(vcf, par_file, output_fname, filters):
+def run(vcf, par_file, output_prefix, filters):
 
     log2_reference_expression = 0
 
-    if output_fname is None:
-        output_fname = "predict"
+    if output_prefix is None:
+        output_prefix = os.path.join("predictions",
+                                    "gene_expr")
 
-    output_file = f"{output_fname}.bed"
+
+
+    # bedio.open_predict(f"{output_prefix}_total.bed", "w") as fout_tot,
 
     logging.info("Begin predictions")
     # open all files
     with (bedio.open_param(par_file, "r") as fpars,
           vcfio.read_vcf(vcf) as fvcf,
-          bedio.open_predict(output_file, "w") as fout):
+          bedio.open_predict(f"{output_prefix}_by_hap.bed", "w") as fout_hap):
 
         # write meta data to output_file
-        fout.meta["vcf"] = vcf
-        fout.meta["parameter_file"] = par_file
+        fout_hap.meta["vcf"] = vcf
+        fout_hap.meta["parameter_file"] = par_file
 
-        fout.write_meta_data(fvcf.samples)
+        fout_hap.write_meta_data(fvcf.samples)
 
         # Perform gene expression predictions
 
@@ -119,7 +122,7 @@ def run(vcf, par_file, output_fname, filters):
             # record should
             # have identical genomic coordinates.
 
-            fout.write_line_record(v[fpars.idx("chrom")],
+            fout_hap.write_line_record(v[fpars.idx("chrom")],
                                    v[fpars.idx("gene_start")],
                                    v[fpars.idx("gene_end")],
                                    gene_id,
