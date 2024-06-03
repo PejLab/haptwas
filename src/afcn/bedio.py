@@ -326,7 +326,7 @@ class WritePredictionBed(PredictionBedABC):
         self._meta_and_header_written = True
 
     def write_line_record(self, chrom, start, end, name,
-                          hap_one_predictions, hap_two_predictions):
+                          predictions, hap_two_predictions=None):
         """Write line of predictions.
 
         Args:
@@ -334,12 +334,15 @@ class WritePredictionBed(PredictionBedABC):
             start: (int) genomic coordinate of gene beginning
             end: (int) genomic coordinate of gene end
             name: (str) gene id
-            hap_one_predictions: ((n sample,) np.ndarray)
+            predictions: ((n sample,) np.ndarray)
+                the behavior changes according to the value of
+                hap_two_predictions as follows:
+                    = None then predictions are log2 (total gene expresssion)
+                    = (n sample,) np.ndarray) then floats representing
+                        predicted gene expression from haplotype one
+            hap_two_predictions: ((n sample,) np.ndarray) or None
                 of floats representing predicted gene expression
-                from haplotype one
-            hap_two_predictions: ((n sample,) np.ndarray)
-                of floats representing predicted gene expression
-                from haplotype two
+                from haplotype two.  (default is None)
 
         Returns:
             None
@@ -347,9 +350,12 @@ class WritePredictionBed(PredictionBedABC):
         if not self._meta_and_header_written:
             raise ValueError("Write meta data before real data")
 
-        data_str = []
-        for h1, h2 in zip(hap_one_predictions, hap_two_predictions):
-            data_str.append(self._hap_delimiter.join([str(h1), str(h2)]))
+        if hap_two_predictions is None:
+            data_str = predictions.astype(str).tolist()
+        else:
+            data_str = []
+            for h1, h2 in zip(predictions, hap_two_predictions):
+                data_str.append(self._hap_delimiter.join([str(h1), str(h2)]))
 
         data_str = self._field_delimiter.join(data_str)
         chrom = self._new_line + chrom

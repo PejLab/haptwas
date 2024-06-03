@@ -22,19 +22,26 @@ def run(vcf, par_file, output_prefix, filters):
 
 
 
-    # bedio.open_predict(f"{output_prefix}_total.bed", "w") as fout_tot,
 
     logging.info("Begin predictions")
     # open all files
     with (bedio.open_param(par_file, "r") as fpars,
           vcfio.read_vcf(vcf) as fvcf,
+          bedio.open_predict(f"{output_prefix}_total.bed", "w") as fout_tot,
           bedio.open_predict(f"{output_prefix}_by_hap.bed", "w") as fout_hap):
 
-        # write meta data to output_file
+        # write meta data to output files
         fout_hap.meta["vcf"] = vcf
         fout_hap.meta["parameter_file"] = par_file
+        fout_hap.meta["sample_values"] = "gene expression haplotype_1 | haplotype_2"
 
         fout_hap.write_meta_data(fvcf.samples)
+
+        fout_tot.meta["vcf"] = vcf
+        fout_tot.meta["parameter_file"] = par_file
+        fout_tot.meta["sample_values"] = "gene expression log2(haplotype_1 + haplotype_2)"
+
+        fout_tot.write_meta_data(fvcf.samples)
 
         # Perform gene expression predictions
 
@@ -121,16 +128,25 @@ def run(vcf, par_file, output_prefix, filters):
             # not all rec values from this iteration of
             # record should
             # have identical genomic coordinates.
+            haplotype_expression = [model.predict(haplotypes[0],
+                                            log2_reference_expression,
+                                            log2_afc),
+                                    model.predict(haplotypes[1],
+                                            log2_reference_expression,
+                                            log2_afc)]
 
             fout_hap.write_line_record(v[fpars.idx("chrom")],
                                    v[fpars.idx("gene_start")],
                                    v[fpars.idx("gene_end")],
                                    gene_id,
-                                   model.predict(haplotypes[0],
-                                            log2_reference_expression,
-                                            log2_afc),
-                                   model.predict(haplotypes[1],
-                                            log2_reference_expression,
-                                            log2_afc))
+                                   *haplotype_expression)
+
+            fout_tot.write_line_record(v[fpars.idx("chrom")],
+                               v[fpars.idx("gene_start")],
+                               v[fpars.idx("gene_end")],
+                               gene_id,
+                               np.log2(haplotype_expression[0]
+                                       + haplotype_expression[1]))
+
 
     logging.info("End predictions")
