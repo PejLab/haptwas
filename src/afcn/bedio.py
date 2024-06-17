@@ -19,43 +19,12 @@ from . import utils
 # TODO where to write specification so that it is callable 
 # to __main__.py and this code
 
-BED_SUFFIX = ".bed"
-
-def open_param(filename, mode):
-    """Open either gzipped or normal text file for reading.
-
-    Args:
-        filename: (str)
-            either .bed or .bed.gz file
-        mode: (char)
-            "r" for read, "w" for write
-
-    Returns:
-        returns instance of class that mimics / uses io.FileIO
-        services
-    """
-
-    if (not filename.endswith(".bed.gz") and 
-        not filename.endswith(".bed")):
-
-        raise ValueError("Not a bed file.")
-
-    if not os.path.exists(filename):
-        raise FileNotFoundError(filename)
-
-    if mode == "r" and filename.endswith(".bed"):
-        return ParseParamBed(io.FileIO(filename, mode))
-
-    elif mode == "r" and filename.endswith(".bed.gz"):
-        return ParseParamBed(gzip.GzipFile(filename))
-
-    if mode == "w" and filename.endswith(".bed"):
-        return WriteParamBed(io.FileIO(filename, mode))
-
-    raise NotImplementedError
 
 
-class BedSpec:
+
+
+class BedABC:
+    _file_suffix = ".bed"
     _encoding = "utf-8"
 
     _meta_prefix = "##"
@@ -117,54 +86,37 @@ class BedSpec:
             self._fid.close()
 
 
-class ExpressionQTLBedSpec(BedSpec):
-    _req_header_fields = OrderedDict(chrom = str,
-                                     qtl_start = int,
-                                     qtl_end = int,
-                                     qtl_id = str,
-                                     gene_start = int,
-                                     gene_end = int,
-                                     gene_id = str,
-                                     variant_pos = int,
-                                     variant_id = str,
-                                     ref = str,
-                                     alt = str)
+class WriteBedABC(BedABC):
+    def _line_record(self, *_):
+        raise NotImplementedError
+
+    def write_meta_and_header_data(self, sample_names):
+        # instantiate string
+        s = ""
+
+        # construct meta data
+        for key, val in self.meta.items():
+            s += "".join([self._meta_prefix,
+                          key,
+                          self._meta_data_key_val_delimiter,
+                          val,
+                          self._new_line])
+
+        # construct header
+        s += self._header_prefix
+        s += self._field_delimiter.join(*self._req_header_fields.keys())
+        s = s.encode(encoding=self._encoding)
+
+        if self._fid.write(s) != len(s):
+            raise RuntimeError("Bytes written not equal to bytes of string.")
+
+        self._meta_and_header_written = True
+
+    def write_line_record(self):
+        pass
 
 
-class ParamBedABC(ExpressionQTLBedSpec):
-    """Enforce parameter bed file specification."""
-
-    def __init__(self):
-        super().__init__()
-
-        self._req_header_fields["log2_afc"] = float
-        self._req_header_fields["sem"] = float
-        self._req_header_fields["p_val"] = float
-
-        for idx, col_name in enumerate(self._req_header_fields.keys()):
-            self._colname_to_idx[col_name] = idx
-
-
-class ParseParamBed(ParamBedABC):
-    def __init__(self, fid):
-
-        self._fid = fid
-
-        # recall that the order of class methods being called is:
-        #   1. __init__
-        #   2. __enter__
-        #   3. __exit__
-        # If there exists an error in __init__ or __enter__, the __exit__
-        # method is not guaranteed to run.  Consequently, I use the try block.
-        try:
-
-            super().__init__()
-            self._initialize()
-
-        except Exception:
-
-            self.__exit__()
-            raise
+class ParseBedABC(BedABC):
 
     def _initialize(self):
         """Load and validate meta data and header as defined in spec."""
@@ -215,31 +167,7 @@ class ParseParamBed(ParamBedABC):
         self._data_char_number = self.tell()
 
     def _record_parser(self):
-
-        if self.header is None:
-            return None
-
-        for record in self:
-
-            output = record.strip().split(self._field_delimiter)
-
-            i = 0
-            for _, field_type in self._req_header_fields.items():
-                output[i] = field_type(output[i])
-                i += 1
-
-            for out_val in output[i:]:
-
-                if utils.is_int(out_val):
-                    out_val = int(out_val)
-                elif utils.is_float(out_val):
-                    out_val = float(out_val)
-
-                output[i] = out_val
-
-                i += 1
-
-            yield output
+        raise NotImplementedError
 
     def idx(self, col_name):
         if col_name not in self._colname_to_idx:
@@ -267,6 +195,112 @@ class ParseParamBed(ParamBedABC):
             previous_record_gb_id = k
 
             yield k, list(g)
+
+
+
+class ExpressionQTLBedSpec:
+    _req_header_fields = OrderedDict(chrom = str,
+                                     qtl_start = int,
+                                     qtl_end = int,
+                                     qtl_id = str,
+                                     gene_start = int,
+                                     gene_end = int,
+                                     gene_id = str,
+                                     variant_pos = int,
+                                     variant_id = str,
+                                     ref = str,
+                                     alt = str)
+
+
+class ParamBedSpec(ExpressionQTLBedSpec):
+    """Enforce parameter bed file specification."""
+    _req_header_fields["log2_afc"] = float
+    _req_header_fields["sem"] = float
+    _req_header_fields["p_val"] = float
+
+
+
+def open_param(filename, mode):
+    """Open either gzipped or normal text file for reading.
+
+    Args:
+        filename: (str)
+            either .bed or .bed.gz file
+        mode: (char)
+            "r" for read, "w" for write
+
+    Returns:
+        returns instance of class that mimics / uses io.FileIO
+        services
+    """
+
+    if (not filename.endswith(".bed.gz") and 
+        not filename.endswith(".bed")):
+
+        raise ValueError("Not a bed file.")
+
+    if not os.path.exists(filename):
+        raise FileNotFoundError(filename)
+
+    if mode == "r" and filename.endswith(".bed"):
+        return ParseParamBed(io.FileIO(filename, mode))
+
+    elif mode == "r" and filename.endswith(".bed.gz"):
+        return ParseParamBed(gzip.GzipFile(filename))
+
+    if mode == "w" and filename.endswith(".bed"):
+        return WriteParamBed(io.FileIO(filename, mode))
+
+    raise NotImplementedError
+
+
+class ParseParamBed(ParseBedABC, ParamBedSpec):
+    def __init__(self, fid):
+
+        self._fid = fid
+
+        # recall that the order of class methods being called is:
+        #   1. __init__
+        #   2. __enter__
+        #   3. __exit__
+        # If there exists an error in __init__ or __enter__, the __exit__
+        # method is not guaranteed to run.  Consequently, I use the try block.
+        try:
+
+            super().__init__()
+            self._initialize()
+
+        except Exception:
+
+            self.__exit__()
+            raise
+
+    def _record_parser(self):
+
+        if self.header is None:
+            return None
+
+        for record in self:
+
+            output = record.strip().split(self._field_delimiter)
+
+            i = 0
+            for _, field_type in self._req_header_fields.items():
+                output[i] = field_type(output[i])
+                i += 1
+
+            for out_val in output[i:]:
+
+                if utils.is_int(out_val):
+                    out_val = int(out_val)
+                elif utils.is_float(out_val):
+                    out_val = float(out_val)
+
+                output[i] = out_val
+
+                i += 1
+
+            yield output
 
 
 # TODO
@@ -353,17 +387,17 @@ class WriteParamBed(ParamBedABC):
 
 def read_gene_variant_map(filename):
     if filename.endswith(".bed"):
-        return ParseGeneVariant(io.FileIO(filename))
+        return ParseEqtlMap(io.FileIO(filename))
 
     if filename.endswith(".bed.gz"):
-        return ParseGeneVariantMap(gzip.GzipFile(filename))
+        return ParseEqtlMap(gzip.GzipFile(filename))
 
     raise NotImplementedError
 
 
 # TODO
 
-class ParseGeneVariantMap(ExpressionQTLBedSpec):
+class ParseEqtlMap(ExpressionQTLBedSpec):
     def __init__(self, fid):
 
         self._fid = fid
@@ -373,7 +407,52 @@ class ParseGeneVariantMap(ExpressionQTLBedSpec):
         self._initialize()
 
     def _initialize(self):
-        pass
+        """Load meta data and header, create header to idx dictionary."""
+
+        # load meta data 
+        for par_line in self:
+
+            if not par_line.startswith(self._meta_prefix):
+                break
+
+            # max_split kwarg in the string split method is important in 
+            # the event that a user has an '=' in the value field.
+
+            key, val = (par_line
+                        .removeprefix(self._meta_prefix)
+                        .split(sep=self._meta_data_key_val_delimiter,
+                               maxsplit=1))
+
+            self.meta[key.strip()] = val.strip()
+
+        # decompose header and verify it is spec. compliant
+        # remember that for empty files par_line is not associated 
+        # with any value and throws an UnboundLocalError
+        if not par_line.startswith(self._header_prefix):
+            raise ValueError("Header required: No file header found")
+
+        try:
+            
+            par_line = par_line.removeprefix(self._header_prefix)
+
+        except UnboundLocalError as err:
+            # the add_note method is available on Python 3.11 +
+            # err.add_note(("\nMost likely reason for failure is that "
+            #              f"file {self.name} is empty."))
+            err.args = (err.args[0] +
+                        f"\nNo header found, most likely reason for failure is"
+                        "that file is empty.",)
+            raise UnboundLocalError(err) from None
+
+        self.header = par_line.strip().split(sep=self._field_delimiter)
+
+        # hcol : header column name, rcol: required header column name
+        for hcol, rcol in zip(self.header, self._req_header_fields.keys()):
+
+            if hcol != rcol:
+                raise ValueError(f"Invalid file header")
+
+        self._data_char_number = self.tell()
 
     def group_by(self, ):
         pass
@@ -405,7 +484,7 @@ def open_predict(filename, mode):
     raise ValueError("Uninterpretable mode")
 
 
-class PredictionBedABC(BedSpec):
+class PredictionBedABC(BedABC):
     """Prediction bed doc string."""
     _req_header_fields = OrderedDict(chrom = str, 
                                      start = int,
@@ -426,45 +505,6 @@ class WritePredictionBed(PredictionBedABC):
         self._meta_and_header_written = False
 
         self.meta["data"]="Predicted gene expression"
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *args):
-        if not self.closed:
-            self.close()
-
-    @property
-    def closed(self):
-        return self._fid.closed
-
-    def close(self):
-        if not self.closed:
-            self._fid.flush()
-            self._fid.close()
-
-    def write_meta_data(self, sample_names):
-        # instantiate string
-        s = ""
-
-        # construct meta data
-        for key, val in self.meta.items():
-            s += "".join([self._meta_prefix,
-                          key,
-                          self._meta_data_key_val_delimiter,
-                          val,
-                          self._new_line])
-
-        # construct header
-        s += self._header_prefix
-        s += self._field_delimiter.join([*self._req_header_fields.keys(),
-                                         *sample_names])
-        s = s.encode(encoding=self._encoding)
-
-        if self._fid.write(s) != len(s):
-            raise RuntimeError("Bytes written not equal to bytes of string.")
-
-        self._meta_and_header_written = True
 
     def write_line_record(self, chrom, start, end, name, data):
         """Write line of predictions.

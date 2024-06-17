@@ -10,7 +10,7 @@ Contents:
 
 * meta data
 * BED fields labeled:
-    - chrom, 
+    - chrom,
     - qtl_start: (int) minimum(variant position, gene position)
     - qtl_end: (int) maximum(variant position, gene position)
 * custom fields:
