@@ -128,6 +128,7 @@ def run(vcf, par_file, output_prefix, filters):
             # not all rec values from this iteration of
             # record should
             # have identical genomic coordinates.
+            # moreover the abundance of gene transcripts are in linear scale
             haplotype_expression = [model.predict(haplotypes[0],
                                             log2_reference_expression,
                                             log2_afc),
@@ -145,8 +146,8 @@ def run(vcf, par_file, output_prefix, filters):
                                v[fpars.idx("gene_start")],
                                v[fpars.idx("gene_end")],
                                gene_id,
-                               np.log2(haplotype_expression[0]
-                                       + haplotype_expression[1]))
+                               haplotype_expression[0]
+                                    + haplotype_expression[1])
 
 
     logging.info("End predictions")

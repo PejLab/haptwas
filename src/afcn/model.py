@@ -39,14 +39,14 @@ def predict(haplotype, alpha, beta):
             biallelic genotypes where 0 denotes reference and 1 
             denotes the alternative alleles of first haplotype.
         alpha: (float)
-            the log reference expression
+            the log2 reference expression
         beta: ((n variants,) ndarray)
-            log allele fold change, should always be a 1-d array
+            log2 allele fold change, should always be a 1-d array
 
     Returns:
         (float,) or (N samples,) ndarray
-            The abunance of transcripts predicted to originate from
-            the input haplotype
+            The abunance, linear scale, of transcripts predicted to
+            originate from the input haplotype
     """
     if not utils.is_biallelic(haplotype):
         raise ValueError("Genotypes are not biallelic")

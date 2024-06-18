@@ -18,5 +18,5 @@ Contents:
     - end : gene end position
     - name : ensembl gene id
 * custom fields:
-    - sample_id: (float) predicted gene expression per haplotype, e.g.
-        322|32
+    - sample_id: (float) per haplotype predicted gene expression,
+        linear scale.  e.g. 322|32

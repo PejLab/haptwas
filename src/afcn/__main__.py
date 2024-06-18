@@ -108,8 +108,9 @@ predict_parser = subparsers.add_parser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description="""
 Given an individual's cis-regulatory variant genotype
-and log2 fold change effect sizes predict gene expression 
-under the model by Mohammadi et al. Genome Research 2017.""",
+and log2 fold change effect sizes predict gene expression,
+in linear scale, under the model by Mohammadi et al.
+Genome Research 2017.""",
         epilog =("""
 
 RETURNS
