@@ -1,6 +1,7 @@
 """Test gene / variant map
 
-By: GDML
+By: Robert Vogel
+    Genomic Data Modeling Lab
 """
 
 import os
@@ -17,10 +18,10 @@ from afcn import bedio
 class TestFactoryFunction(unittest.TestCase):
     def test_wrong_file_extensions(self):
         with self.assertRaises(NotImplementedError):
-            bedio.read_gene_variant_map("test.vcf")
+            bedio.read_eqtl_map("test.vcf")
 
         with self.assertRaises(NotImplementedError):
-            bedio.read_gene_variant_map("test.bgz")
+            bedio.read_eqtl_map("test.bgz")
 
 
 

@@ -150,8 +150,7 @@ predict_parser.add_argument(
         "-o",
         type=str,
         default=None,
-        help=("File prefix, and path, for the results"
-              " and log files"))
+        help=("Path, for the results and log files"))
 
 # ================================================================
 
@@ -230,6 +229,9 @@ args = parser.parse_args(sys.argv[1:])
 
 if args.o is None:
     args.o = args.subparser_name
+
+if os.path.sep in args.o and not os.path.exists(os.path.dirname(args.o)):
+    os.mkdir(os.path.dirname(args.o))
 
 logging.basicConfig(filename=f"{args.o}{LOG_SUFFIX}",
                 level=logging.INFO,

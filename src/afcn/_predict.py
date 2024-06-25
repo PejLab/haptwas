@@ -12,14 +12,11 @@ from . import bedio
 from . import vcfio
 
 
-def run(vcf, par_file, output_fname, filters):
+def run(vcf, par_file, output_basename, filters):
 
     log2_reference_expression = 0
 
-    if output_fname is None:
-        output_fname = "predict"
-
-    output_file = f"{output_fname}.bed"
+    output_file = f"{output_basename}.bed"
 
     logging.info("Begin predictions")
     # open all files
@@ -31,7 +28,7 @@ def run(vcf, par_file, output_fname, filters):
         fout.meta["vcf"] = vcf
         fout.meta["parameter_file"] = par_file
 
-        fout.write_meta_data(fvcf.samples)
+        fout.set_sample_names(fvcf.samples)
 
         # Perform gene expression predictions
 

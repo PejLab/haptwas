@@ -21,4 +21,3 @@ Contents:
     - variant_id: (string)
     - ref: (char) reference allele
     - alt: (char) alternative allele
-    

@@ -1,6 +1,20 @@
 """IO tools for afcn bed files.
 
-By: GDML
+By: Robert Vogel
+    Genomic Data Modeling Lab
+
+
+Available Functions
+
+    open_param
+        returns a file handle for parsing or writing parameter bed file
+    open_predict 
+        returns a file handle for parsing or writing prediction bed file
+    read_eqtl_map
+        returns a file handle for parsing eqtl_map file
+    read_gene_expression
+        returns a file handle for parsing gene expression data
+
 """
 
 import os
@@ -22,8 +36,24 @@ from . import utils
 
 
 
-
 class BedABC:
+    """Define parameter and methods for I/O with all bed files.
+
+    This class is not meant to be used by itself, but to be subclassed.  It
+    contains properties defining: delimiters, encoding, file suffix, and
+    prefixes for the three types of data (meta, header, records) contained in
+    such documents.  Moreover, it includes methods for context managers (to
+    open and close file handles), iteration, and finding traversing files.
+
+    To subclass BedABC you'll need to call
+
+        __init__
+
+    and pass a file handle to
+
+        _fid
+        
+    """
     _file_suffix = ".bed"
     _encoding = "utf-8"
 
@@ -35,7 +65,7 @@ class BedABC:
     _field_delimiter = "\t"
     _new_line = "\n"
 
-    def __init__(self, *_):
+    def __init__(self):
         _date = datetime.today()
         _date = f"{_date.year}-{_date.month:02d}-{_date.day:02d}"
 
@@ -54,8 +84,9 @@ class BedABC:
                                 date = _date,
                                 python_version = _py_version,
                                 user = _user)
+
+        self._fid = None
         self.header = None
-        self._colname_to_idx  = dict()
 
     def __iter__(self):
         return self
@@ -87,10 +118,34 @@ class BedABC:
 
 
 class WriteBedABC(BedABC):
-    def _line_record(self, *_):
-        raise NotImplementedError
+    """Abstract base class for writing bed files.
 
-    def write_meta_and_header_data(self, sample_names):
+    Use abstract base class by overloading:
+
+        write_line_record (method)
+            bed file specific method for writing as single record to file
+        _req_header_fields (attribute)
+            column names in header
+    """
+    def __init__(self, fid):
+
+        super().__init__()
+
+        self._fid = fid
+
+        self._colname_to_idx  = dict()
+
+        self._meta_and_header_written = False
+        self._req_header_fields = None
+
+    def _write_meta_and_header_data(self):
+
+        if self._req_header_fields is None:
+            raise AttributeError("Required header fields haven't been specfied.")
+
+        if self._meta_and_header_written:
+            raise ValueError("Meta and header data have already been written")
+
         # instantiate string
         s = ""
 
@@ -104,7 +159,7 @@ class WriteBedABC(BedABC):
 
         # construct header
         s += self._header_prefix
-        s += self._field_delimiter.join(*self._req_header_fields.keys())
+        s += self._field_delimiter.join(self._req_header_fields.keys())
         s = s.encode(encoding=self._encoding)
 
         if self._fid.write(s) != len(s):
@@ -112,11 +167,27 @@ class WriteBedABC(BedABC):
 
         self._meta_and_header_written = True
 
-    def write_line_record(self):
-        pass
+    def write_line_record(self, *args):
+        raise NotImplementedError
 
 
 class ParseBedABC(BedABC):
+    """Abstract base class for parsing bed files
+    
+    Use abstract base class by overloading:
+
+        _record_parser (method)
+            bed file specific record parser
+            
+            
+    """
+    def __init__(self, fid):
+        super().__init__()
+
+        self._fid = fid
+
+        self._colname_to_idx  = dict()
+        self._req_header_fields = None
 
     def _initialize(self):
         """Load and validate meta data and header as defined in spec."""
@@ -164,12 +235,18 @@ class ParseBedABC(BedABC):
             if field_name != self.header[i]:
                 raise ValueError(f"Invalid file header")
 
+        for i, colname in enumerate(self.header):
+            self._colname_to_idx[colname] = i
+
+
         self._data_char_number = self.tell()
 
     def _record_parser(self):
+        """Bed file specific record parser."""
         raise NotImplementedError
 
     def idx(self, col_name):
+        """Retrieve index of a field specified header defined column name"""
         if col_name not in self._colname_to_idx:
             raise KeyError(f"{col_name} is not in header")
         return self._colname_to_idx[col_name]
@@ -177,7 +254,7 @@ class ParseBedABC(BedABC):
     def group_by(self, gb_id):
         """Perform group by on gb_id, assumed sorted.
 
-        Requires that gene id are sorted lexicographically.
+        Requires that gb_id are sorted lexicographically.
         """
 
         if (self.tell() != self._data_char_number):
@@ -197,26 +274,30 @@ class ParseBedABC(BedABC):
             yield k, list(g)
 
 
+def generate_eqtl_req_fields():
+    return OrderedDict(chrom = str,
+                       qtl_start = int,
+                       qtl_end = int,
+                       qtl_id = str,
+                       gene_start = int,
+                       gene_end = int,
+                       gene_id = str,
+                       variant_pos = int,
+                       variant_id = str,
+                       ref = str,
+                       alt = str)
 
-class ExpressionQTLBedSpec:
-    _req_header_fields = OrderedDict(chrom = str,
-                                     qtl_start = int,
-                                     qtl_end = int,
-                                     qtl_id = str,
-                                     gene_start = int,
-                                     gene_end = int,
-                                     gene_id = str,
-                                     variant_pos = int,
-                                     variant_id = str,
-                                     ref = str,
-                                     alt = str)
 
 
-class ParamBedSpec(ExpressionQTLBedSpec):
+def generate_param_bed_spec():
     """Enforce parameter bed file specification."""
+    _req_header_fields = generate_eqtl_req_fields()
+
     _req_header_fields["log2_afc"] = float
     _req_header_fields["sem"] = float
     _req_header_fields["p_val"] = float
+
+    return _req_header_fields
 
 
 
@@ -254,11 +335,8 @@ def open_param(filename, mode):
     raise NotImplementedError
 
 
-class ParseParamBed(ParseBedABC, ParamBedSpec):
+class ParseParamBed(ParseBedABC):
     def __init__(self, fid):
-
-        self._fid = fid
-
         # recall that the order of class methods being called is:
         #   1. __init__
         #   2. __enter__
@@ -267,7 +345,8 @@ class ParseParamBed(ParseBedABC, ParamBedSpec):
         # method is not guaranteed to run.  Consequently, I use the try block.
         try:
 
-            super().__init__()
+            super().__init__(fid)
+            self._req_header_fields = generate_param_bed_spec()
             self._initialize()
 
         except Exception:
@@ -304,16 +383,15 @@ class ParseParamBed(ParseBedABC, ParamBedSpec):
 
 
 # TODO
-class WriteParamBed(ParamBedABC):
+class WriteParamBed(WriteBedABC):
     def __init__(self, fid):
+        super().__init__(fid)
 
-        self._fid = fid
-        
+        self._req_header_fields = generate_param_bed_spec()
+
         try:
 
-            super().__init__()
-
-            self._meta_and_header_written = False
+            super().__init__(fid)
 
             self.meta["data"] = "Inferred afc model parameters."
 
@@ -322,30 +400,7 @@ class WriteParamBed(ParamBedABC):
             self.__exit__()
             raise
 
-
-    def write_meta_and_header_data(self, sample_names):
-        # instantiate string
-        s = ""
-
-        # construct meta data
-        for key, val in self.meta.items():
-            s += "".join([self._meta_prefix,
-                          key,
-                          self._meta_data_key_val_delimiter,
-                          val,
-                          self._new_line])
-
-        # construct header
-        s += self._header_prefix
-        s += self._field_delimiter.join(*self._req_header_fields.keys())
-        s = s.encode(encoding=self._encoding)
-
-        if self._fid.write(s) != len(s):
-            raise RuntimeError("Bytes written not equal to bytes of string.")
-
-        self._meta_and_header_written = True
-
-    def write_line_record(self):
+    def _line_record(self):
         """Write line of predictions.
 
         Args:
@@ -385,7 +440,8 @@ class WriteParamBed(ParamBedABC):
 #         if self._fid.write(record_str) != len(record_str):
 #             raise RuntimeError("Bytes written not equal to bytes of string.")
 
-def read_gene_variant_map(filename):
+
+def read_eqtl_map(filename):
     if filename.endswith(".bed"):
         return ParseEqtlMap(io.FileIO(filename))
 
@@ -397,12 +453,10 @@ def read_gene_variant_map(filename):
 
 # TODO
 
-class ParseEqtlMap(ExpressionQTLBedSpec):
+class ParseEqtlMap(ParseBedABC):
     def __init__(self, fid):
-
-        self._fid = fid
-
-        super().__init__()
+        super().__init__(fid)
+        self._req_header_fields = generate_eqtl_req_fields()
 
         self._initialize()
 
@@ -468,13 +522,22 @@ def read_gene_expression(filename):
     raise NotImplementedError
 
 
-class ParseGeneExpression(ExpressionQTLBedSpec):
+class ParseGeneExpression(ParseBedABC):
     def __init__(self, filename):
-        pass
+        raise NotImplementedError
 
 
 
 def open_predict(filename, mode):
+    """Open prediction file handle
+
+    Args:
+        filename (str)
+        mode (char)
+            read "r", or write "w"
+    Returns:
+        (WritePredictionBed) 
+    """
 
     if mode == "r":
         raise NotImplementedError
@@ -484,27 +547,33 @@ def open_predict(filename, mode):
     raise ValueError("Uninterpretable mode")
 
 
-class PredictionBedABC(BedABC):
+def generate_prediction_bed_spec():
     """Prediction bed doc string."""
-    _req_header_fields = OrderedDict(chrom = str, 
-                                     start = int,
-                                     end = int,
-                                     gene_id = str)
+    return OrderedDict(chrom = str, 
+                       start = int,
+                       end = int,
+                       gene_id = str)
 
 
-class WritePredictionBed(PredictionBedABC):
+class WritePredictionBed(WriteBedABC):
     """Buffered write of data to prediction bed file.
 
     Args:
         fid: (file object)
     """
     def __init__(self, fid):
-        super().__init__()
-
-        self._fid = fid
-        self._meta_and_header_written = False
+        super().__init__(fid)
 
         self.meta["data"]="Predicted gene expression"
+        
+        self._req_header_fields = generate_prediction_bed_spec()
+
+    def set_sample_names(self, sample_names):
+
+        for samp_name in sample_names:
+            self._req_header_fields[samp_name] = float
+
+        self._write_meta_and_header_data()
 
     def write_line_record(self, chrom, start, end, name, data):
         """Write line of predictions.
@@ -514,10 +583,10 @@ class WritePredictionBed(PredictionBedABC):
             start: (int) genomic coordinate of gene beginning
             end: (int) genomic coordinate of gene end
             name: (str) gene id
-            data: ((n sample, ) np.ndarray) of floats representing predicted
+            data: ((n sample, ) iterable) of floats representing predicted
                 gene expression.
 
-        Returns:
+        Return:
             None
         """
         if not self._meta_and_header_written:
@@ -531,8 +600,8 @@ class WritePredictionBed(PredictionBedABC):
                                                 str(end), 
                                                 name,
                                                 data_str])
+
         record_str = record_str.encode(encoding=self._encoding)
 
         if self._fid.write(record_str) != len(record_str):
             raise RuntimeError("Bytes written not equal to bytes of string.")
-
