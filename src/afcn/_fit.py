@@ -12,28 +12,20 @@ from . import bedio
 from . import vcfio
 
 
-def run(vcf, gene_expr, gene_and_variants, output_prefix):
+def run(vcf, gene_expr, eqtls, output_path_and_prefix):
 
-    if output_prefix None:
-        output_prefix = "fit"
+    output_fname = f"{output_path_and_prefix}{os.path.extsep}bed"
 
-    output_fname = f"{output_prefix}{bedio.BED_SUFFIX}"
-
-    logging.info("Start: effect size inference")
-    logging.info(f"vcf file:{vcf}")
-    logging.info(f"expression file:{gene_expr}")
-    logging.info(f"variant set per gene:{gene_and_variants}")
+    logging.info(f"output_file:{output_fname}")
+    logging.info("Begin effect size inference")
 
     with (vcfio.read_vcf(vcf) as fin_vcf,
           bedio.read_gene_expression(gene_expr) as fin_expr,
-          bedio.read_gene_variant_map(gene_and_variants) as fin_gene,
+          bedio.read_gene_variant_map(eqtls) as fin_eqtls,
           bedio.open_param(output_fname, "w") as fout_param):
         pass
 
-
      
-
-    logging.info(f"output written to:{output_fname}")
     logging.info("Finished")
 
     raise NotImplementedError

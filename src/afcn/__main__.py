@@ -96,9 +96,8 @@ fit_parser.add_argument("-p",
 fit_parser.add_argument("-o",
                         type=str,
                         default=None,
-                        help=("Path and file prefix to print results and logs,"
-                              " if specified direcotory(ies) doesn't exist,"
-                              " then create."))
+                        help=("Directory to print results, if it does not"
+                              " exist, then create."))
 
 
 # ================================================================
@@ -254,10 +253,10 @@ if args.version:
 
 # default directories and prefix for output files
 if args.o is None:
-    args.o = f"afcn_{args.subparser_name}"
+    args.o = "afcn_out"
 
 if args.p is None:
-    args.p = "output"
+    args.p = f"{args.subparser_name}"
 
 # remove and path related information
 args.p = os.path.basename(args.p)
@@ -283,6 +282,7 @@ args.o = os.path.join(out_path, args.p)
 
 if os.path.sep in args.o and not os.path.exists(os.path.dirname(args.o)):
     os.mkdir(os.path.dirname(args.o))
+
 
 logging.basicConfig(filename=f"{args.o}{LOG_SUFFIX}",
                 level=logging.INFO,

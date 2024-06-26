@@ -1,7 +1,7 @@
 ##version=1.21.30arbitraryVersion
 ##data_set=arbitrary_numbers_for_testing_code
 ##date=2023-12-05
-#chrom	qtl_start	qtl_end	qtl_id	gene_start	gene_end	gene_id	variant_pos	variant_id	ref	alt	log2_afc	sem	p_val
+#chrom	qtl_start	qtl_end	qtl_id	gene_start	gene_end	gene_id	variant_pos	variant_id	ref	alt	log_afc	sem	p_val
 chrm10	5000	100000	"g1/v1/status=0"	7500	100000	"gene_1"	5000	"VAR_1"	A	T	2.2	0.1	 0.002
 chrm10	5005	100000	"g1/v2/status=0"	7500	100000	"gene_1"	5005	"VAR_2"	G	T	0.2	0.1	 0.2
 chrm10	5007	100000	"g1/v3/status=0"	7500	100000	"gene_1"	5007	"VAR_3"	G	C	0.01	0.1	 0.5

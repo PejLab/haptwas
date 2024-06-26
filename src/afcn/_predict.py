@@ -16,13 +16,18 @@ def run(vcf, par_file, output_prefix, filters):
 
     log_reference_expression = 0
 
+    output_hap_fname = f"{output_prefix}_by_hap{os.path.extsep}bed"
+    output_total_fname = f"{output_prefix}_total{os.path.extsep}bed"
+
+    logging.info(f"output_hap_file:{output_hap_fname}")
+    logging.info(f"output_total_file:{output_total_fname}")
 
     logging.info("Begin predictions")
     # open all files
     with (bedio.open_param(par_file, "r") as fpars,
           vcfio.read_vcf(vcf) as fvcf,
-          bedio.open_predict(f"{output_prefix}_total.bed", "w") as fout_tot,
-          bedio.open_predict(f"{output_prefix}_by_hap.bed", "w") as fout_hap):
+          bedio.open_predict(output_total_fname, "w") as fout_tot,
+          bedio.open_predict(output_hap_fname, "w") as fout_hap):
 
         # write meta data to output files
         fout_hap.meta["vcf"] = vcf
