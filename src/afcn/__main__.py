@@ -113,7 +113,7 @@ predict_parser = subparsers.add_parser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description="""
 Given an individual's cis-regulatory variant genotype
-and log2 fold change effect sizes predict gene expression 
+and log fold change effect sizes predict gene expression 
 under the model by Mohammadi et al. Genome Research 2017.""",
         epilog =("""
 
@@ -139,7 +139,7 @@ predict_parser.add_argument(
         "--params",
        required=True,
        help="""Tab delimited text file providing
-       log2 aFC point estimates per (gene, variant)
+       log aFC point estimates per (gene, variant)
        pair.  See below for more details.
        """)
 predict_parser.add_argument("--filters",

@@ -294,7 +294,7 @@ def generate_param_bed_spec():
     """Enforce parameter bed file specification."""
     _req_header_fields = generate_eqtl_req_fields()
 
-    _req_header_fields["log2_afc"] = float
+    _req_header_fields["log_afc"] = float
     _req_header_fields["sem"] = float
     _req_header_fields["p_val"] = float
 
@@ -416,9 +416,9 @@ class WriteParamBed(WriteBedABC):
             variant_id: (str),
             ref: (str), reference allele
             alt: (str), alternative allele
-            log2_afc: (float)
-            log2_afc_sem: (float)
-            log2_afc_p_value: (float)
+            log_afc: (float)
+            log_afc_sem: (float)
+            log_afc_p_value: (float)
 
 
         Returns:
@@ -588,7 +588,7 @@ class WritePredictionBed(WriteBedABC):
             predictions: ((n sample,) np.ndarray)
                 the behavior changes according to the value of
                 hap_two_predictions as follows:
-                    = None then predictions are log2 (total gene expresssion)
+                    = None then predictions are log (total gene expresssion)
                     = (n sample,) np.ndarray) then floats representing
                         predicted gene expression from haplotype one
             hap_two_predictions: ((n sample,) np.ndarray) or None

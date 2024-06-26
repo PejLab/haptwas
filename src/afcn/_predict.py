@@ -14,7 +14,7 @@ from . import vcfio
 
 def run(vcf, par_file, output_prefix, filters):
 
-    log2_reference_expression = 0
+    log_reference_expression = 0
 
 
     logging.info("Begin predictions")
@@ -41,7 +41,7 @@ def run(vcf, par_file, output_prefix, filters):
 
         for gene_id, variants in fpars.group_by("gene_id"):
 
-            log2_afc = np.full(len(variants), np.nan)
+            log_afc = np.full(len(variants), np.nan)
 
             haplotypes = [np.full((fvcf.n_samples, len(variants)), np.nan),
                           np.full((fvcf.n_samples, len(variants)), np.nan)]
@@ -105,7 +105,7 @@ def run(vcf, par_file, output_prefix, filters):
 
                     continue
 
-                log2_afc[i] = v[fpars.idx("log2_afc")]
+                log_afc[i] = v[fpars.idx("log_afc")]
                 for hap_num in range(2):
 
                     for n, allele_idx in enumerate(samp_rec["genotypes"][hap_num,:]):
@@ -124,11 +124,11 @@ def run(vcf, par_file, output_prefix, filters):
             # record should
             # have identical genomic coordinates.
             haplotype_expression = [model.predict(haplotypes[0],
-                                            log2_reference_expression,
-                                            log2_afc),
+                                            log_reference_expression,
+                                            log_afc),
                                     model.predict(haplotypes[1],
-                                            log2_reference_expression,
-                                            log2_afc)]
+                                            log_reference_expression,
+                                            log_afc)]
 
             fout_hap.write_line_record(v[fpars.idx("chrom")],
                                    v[fpars.idx("gene_start")],

@@ -28,7 +28,7 @@ def _predict(haplotype, alpha, beta):
     Args:
         see predict
     """
-    return np.exp2(alpha + np.dot(haplotype, beta))
+    return np.exp(alpha + np.dot(haplotype, beta))
 
 
 def predict(haplotype, alpha, beta):
@@ -42,9 +42,9 @@ def predict(haplotype, alpha, beta):
             biallelic genotypes where 0 denotes reference and 1 
             denotes the alternative alleles of first haplotype.
         alpha: (float)
-            the log reference expression
+            the natural log reference expression
         beta: ((n variants,) ndarray)
-            log allele fold change, should always be a 1-d array
+            natural log allele fold change, should always be a 1-d array
 
     Returns:
         (float,) or (N samples,) ndarray
@@ -192,7 +192,7 @@ def _obj(haplotype_one, haplotype_two, y, reg, reg_const):
                                k[1:])
                      + _predict(haplotype_two,
                                 k[0],
-                                k[1:]))**2))
+                                k[1:])))**2)
             + _penalty_func(k))
 
     return _g
