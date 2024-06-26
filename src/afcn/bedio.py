@@ -450,55 +450,7 @@ class ParseEqtlMap(ParseBedABC):
 
         self._initialize()
 
-    def _initialize(self):
-        """Load meta data and header, create header to idx dictionary."""
-
-        # load meta data 
-        for par_line in self:
-
-            if not par_line.startswith(self._meta_prefix):
-                break
-
-            # max_split kwarg in the string split method is important in 
-            # the event that a user has an '=' in the value field.
-
-            key, val = (par_line
-                        .removeprefix(self._meta_prefix)
-                        .split(sep=self._meta_data_key_val_delimiter,
-                               maxsplit=1))
-
-            self.meta[key.strip()] = val.strip()
-
-        # decompose header and verify it is spec. compliant
-        # remember that for empty files par_line is not associated 
-        # with any value and throws an UnboundLocalError
-        if not par_line.startswith(self._header_prefix):
-            raise ValueError("Header required: No file header found")
-
-        try:
-            
-            par_line = par_line.removeprefix(self._header_prefix)
-
-        except UnboundLocalError as err:
-            # the add_note method is available on Python 3.11 +
-            # err.add_note(("\nMost likely reason for failure is that "
-            #              f"file {self.name} is empty."))
-            err.args = (err.args[0] +
-                        f"\nNo header found, most likely reason for failure is"
-                        "that file is empty.",)
-            raise UnboundLocalError(err) from None
-
-        self.header = par_line.strip().split(sep=self._field_delimiter)
-
-        # hcol : header column name, rcol: required header column name
-        for hcol, rcol in zip(self.header, self._req_header_fields.keys()):
-
-            if hcol != rcol:
-                raise ValueError(f"Invalid file header")
-
-        self._data_char_number = self.tell()
-
-    def group_by(self, ):
+    def _record_parser(self):
         pass
     
 
