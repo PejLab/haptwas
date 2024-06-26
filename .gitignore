@@ -6,9 +6,9 @@ src/build
 *.swp
 *.coverage
 *egg-info/
-example/env/
 htmlcov/
 docs/
 build/
+example/*/
 *__pycache__/
 *.ipynb_checkpoints/
