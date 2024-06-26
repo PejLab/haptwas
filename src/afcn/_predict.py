@@ -29,7 +29,7 @@ def run(vcf, par_file, output_prefix, filters):
         fout_hap.meta["parameter_file"] = par_file
         fout_hap.meta["sample_values"] = "gene expression haplotype_1 | haplotype_2"
 
-        fout.set_sample_names(fvcf.samples)
+        fout_hap.set_sample_names(fvcf.samples)
 
         fout_tot.meta["vcf"] = vcf
         fout_tot.meta["parameter_file"] = par_file
@@ -55,7 +55,8 @@ def run(vcf, par_file, output_prefix, filters):
                 # records corresponding to that locus, each element of the list
                 # is a dictionary of genotype records for each sample.  Most
                 # of the time there will be a single record retrieved.
-                sample_genotype_records = fvcf.get_genotypes(v[fpars.idx("chrom")],
+                sample_genotype_records = fvcf.get_genotypes(
+                                                v[fpars.idx("chrom")],
                                                 v[fpars.idx("variant_pos")],
                                                 filter_vals=filters)
 

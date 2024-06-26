@@ -188,9 +188,11 @@ def _obj(haplotype_one, haplotype_two, y, reg, reg_const):
 
         return (np.sum((y 
             - np.log(1 + _predict(haplotype_one,
-                               haplotype_two,
                                k[0],
-                               k[1:])))**2)
+                               k[1:])
+                     + _predict(haplotype_two,
+                                k[0],
+                                k[1:]))**2))
             + _penalty_func(k))
 
     return _g

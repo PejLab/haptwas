@@ -62,6 +62,7 @@ class BedABC:
 
     _header_prefix = "#"
 
+    _hap_delimiter = "|"
     _field_delimiter = "\t"
     _new_line = "\n"
 
