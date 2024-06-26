@@ -14,7 +14,7 @@ DEFAULT_META = dict(
 DEFAULT_HEADER = ("chrom","qtl_start","qtl_end","qtl_id",
                    "gene_start", "gene_end", "gene_id",
                    "variant_pos", "variant_id","ref", "alt",
-                   "log2_afc", "sem","p_val")
+                   "log_afc", "sem","p_val")
 
 DEFAULT_DATA = [("chr1",5000,100000,"SIMULATE_FEATURE_1/VAR_1",
              7500, 100000, "SIMULATE_FEATURE_1",

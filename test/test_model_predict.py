@@ -14,7 +14,7 @@ class Test_predict(TestCase):
         haplotype = np.array([0,1, 1])
         beta = np.array([1, 3, 0.5])
         alpha = 0
-        y_true = np.exp2(3.5)
+        y_true = np.exp(3.5)
 
         self.assertAlmostEqual(y_true,
                                model._predict(haplotype, alpha, beta))
@@ -41,8 +41,8 @@ class Test_predict(TestCase):
         alpha = 0
 
         y_true = np.array([1,
-                           np.exp2(3),
-                           np.exp2(3)])
+                           np.exp(3),
+                           np.exp(3)])
 
         y_predict = model._predict(h1,alpha,beta)
 
@@ -74,21 +74,21 @@ class Test_predict(TestCase):
                                )
         
         # y = e^(1 + 0 * 1)= e
-        self.assertAlmostEqual(np.exp2(1),
+        self.assertAlmostEqual(np.exp(1),
                                model._predict(0,
                                               1,
                                               1)
                                )
 
         # y = e^(0 + 1 * 2) = e^2
-        self.assertAlmostEqual(np.exp2(2),
+        self.assertAlmostEqual(np.exp(2),
                                model._predict(1,
                                               0,
                                               2)
                                )
 
         # y = e^(0 + dot([1,1],[1,2])) = e^3
-        self.assertAlmostEqual(np.exp2(3),
+        self.assertAlmostEqual(np.exp(3),
                                model._predict(np.array([1,1]), 
                                               0,
                                               np.array([1,2]))
@@ -105,7 +105,7 @@ class Test_predict(TestCase):
         # haplotype consists of 10 variants, on haplotype
         # is only ref, the other only alt
 
-        self.assertAlmostEqual(np.exp2(10),
+        self.assertAlmostEqual(np.exp(10),
                                model._predict(np.ones(10),
                                               0,
                                               np.ones(10))
@@ -180,7 +180,7 @@ class TestPredict(TestCase):
     def test_prediction_vals(self):
         """Test whether the outputs of model._predict are returned."""
         alpha = 1.5
-        self.assertAlmostEqual(np.exp2(3 + alpha),
+        self.assertAlmostEqual(np.exp(3 + alpha),
                                model.predict(np.array([1,1]), 
                                              alpha,
                                              np.array([1,2]))
