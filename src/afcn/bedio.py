@@ -369,17 +369,6 @@ class ParseParamBed(ParseBedABC):
                 output[i] = field_type(output[i])
                 i += 1
 
-            for out_val in output[i:]:
-
-                if utils.is_int(out_val):
-                    out_val = int(out_val)
-                elif utils.is_float(out_val):
-                    out_val = float(out_val)
-
-                output[i] = out_val
-
-                i += 1
-
             yield output
 
 

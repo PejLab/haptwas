@@ -13,43 +13,10 @@ from unittest import TestCase, main
 from afcn import bedio, utils
 
 
-
-def setUpModule():
-
-    global bed_dir
-    global parse_bed_fname
-    global write_bed_fname
-
-
-    bed_dir = tempfile.TemporaryDirectory()
-    parse_bed_fname = os.path.join(bed_dir.name, "parsing_test.bed")
-    write_bed_fname = os.path.join(bed_dir.name, "write_test.bed")
-
-    b = bedio.BedABC()
-
-    s = ""
-    for key, val in b.meta.items():
-        s += (f"{b._meta_prefix}{key}{b._meta_data_key_val_delimiter}"
-              f"{val}{b._new_line}")
-
-    s += "".join([b._header_prefix,
-                b._field_delimiter.join(["chrom","start", "end", "name"]),
-                b._new_line])
-
-    s += b._field_delimiter.join(["1", "1000", "1100", "ENS_TEST_001"])
-
-    with open(parse_bed_fname, "w") as fid:
-        fid.write(s)
-
-
-def tearDownModule():
-    bed_dir.cleanup()
-
-
 class TestBedABC(TestCase):
     def setUp(self):
         _file_suffix = ".bed"
-        _encoding = "utf-8"
+        self.encoding = "utf-8"
 
         _meta_prefix = "##"
         _meta_data_key_val_delimiter = "="
@@ -113,8 +80,36 @@ class TestBedABC(TestCase):
 
 class TestParseBedABC(TestCase):
     def setUp(self):
-        self._fid = io.FileIO(parse_bed_fname, "w")
+        self.encoding="utf-8"
+
+        # make in memory file to parse
+        b = bedio.BedABC()
+        self._fid = io.BytesIO()
+
+        for key, val in b.meta.items():
+            self._fid.write((f"{b._meta_prefix}{key}{b._meta_data_key_val_delimiter}"
+                            f"{val}{b._new_line}").encode(self.encoding))
+
+        self.header = ["chrom","start", "end", "name"]
+        self.req_header_fields = dict(chrom=str, start=int, end=int, name=str)
+
+        self._fid.write("".join([b._header_prefix,
+                    b._field_delimiter.join(self.header)]).encode(self.encoding))
+
+
+        self.records = [["chrm1", "1000", "1100", "ENS_TEST_002"],
+                         ["chrm1", "1200", "1300", "ENS_TEST_002"],
+                         ["chrm1", "1600", "1900", "ENS_TEST_003"]]
+
+        for rec in self.records:
+            self._fid.write("".join([b._new_line,
+                             b._field_delimiter.join(rec)]).encode(self.encoding))
+
+
+        self._fid.seek(0)
+
         self.parser = bedio.ParseBedABC(self._fid)
+
 
     def tearDown(self):
         if not self._fid.closed:
@@ -124,19 +119,84 @@ class TestParseBedABC(TestCase):
         self.assertEqual(self._fid, self.parser._fid)
 
         self.assertIsInstance(self.parser._colname_to_idx, dict)
-        self._req_header_fields = None
 
-    def test_context_management(self):
+    def test_file_operation_property(self):
         self.assertFalse(self.parser.closed)
         self.parser.close()
         self.assertTrue(self.parser.closed)
         self.assertTrue(self._fid.closed)
 
-        with bedio.ParseBedABC(io.FileIO(parse_bed_fname, 'r')) as fid:
+    def test_context_management(self):
+        with bedio.ParseBedABC(self._fid) as fid:
             self.assertFalse(fid.closed)
 
         self.assertTrue(fid.closed)
 
+    def test_record_parser(self):
+        with self.assertRaises(NotImplementedError):
+            self.parser._record_parser()
+
+    def test_colname_error(self):
+        with self.assertRaises(KeyError):
+            self.parser.idx("cat")
+
+    def test_colname(self):
+        self.parser._req_header_fields = self.req_header_fields
+        self.parser._initialize()
+
+        for i, colname in enumerate(self.header):
+            self.assertEqual(self.parser.idx(colname), i)
+
+        self.assertEqual(len(self.parser._colname_to_idx),
+                         len(self.header))
+
+    def test_initialize(self):
+        self.parser._req_header_fields = self.req_header_fields
+        self.parser._initialize()
+
+        for i, colname in enumerate(self.header):
+            self.assertEqual(colname, self.parser.header[i])
+
+    def test_empty_file(self):
+        with (self.assertRaises(UnboundLocalError),
+            bedio.ParseBedABC(io.BytesIO()) as parser):
+            parser._initialize()
+
+
+    def _record_parser(self):
+        for rec in self.parser:
+            output = (rec.strip()
+                        .split(self.parser._field_delimiter))
+
+            i = 0
+
+            for _, field_type in self.parser._req_header_fields.items():
+                output[i] = field_type(output[i])
+                i += 1
+
+            yield output
+
+    def test_group_by(self):
+        self.parser._record_parser = self._record_parser
+        self.parser._req_header_fields = self.req_header_fields
+        self.parser._initialize()
+
+        i = 0
+        for gene_name, g in self.parser.group_by("name"):
+            print(gene_name, g)
+            self.assertEqual(gene_name, self.records[i][-1])
+
+            for true_record, test_record in zip(self.records[i:len(g)], g):
+
+                j = 0
+                for rec, val in zip(true_record, test_record):
+                    field_type = self.req_header_fields[self.header[j]]
+                
+                    rec = field_type(rec)
+                    self.assertEqual(rec, val)
+                    j += 1
+
+                i += 1
 
 
 if __name__ == "__main__":
