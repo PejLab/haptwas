@@ -140,8 +140,8 @@ def run(vcf, par_file, output_prefix, filters):
                                v[fpars.idx("gene_start")],
                                v[fpars.idx("gene_end")],
                                gene_id,
-                               np.log2(haplotype_expression[0]
-                                       + haplotype_expression[1]))
+                               haplotype_expression[0]
+                                       + haplotype_expression[1])
 
 
     logging.info("End predictions")
