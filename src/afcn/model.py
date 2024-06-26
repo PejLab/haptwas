@@ -22,39 +22,36 @@ from . import utils
 
 # TODO how to handle missing genotype data, e.g. nans, should I ignore?
 # TODO how to handle missing effect sizes?
-def _predict(hap_one, hap_two, alpha, beta):
+def _predict(haplotype, alpha, beta):
     """Compute model, without input checks.
 
     Args:
         see predict
     """
-    return (np.exp2(alpha + np.dot(hap_one, beta)) + 
-            np.exp2(alpha + np.dot(hap_two, beta)))
+    return np.exp2(alpha + np.dot(haplotype, beta))
 
 
-def predict(hap_one, hap_two, alpha, beta):
+def predict(haplotype, alpha, beta):
     """Expected abundance of a gene's transcripts under model.
 
     Apply the haplotype aware model of gene expression published
     in Mohammadi et al. Genome Research 2017.
 
     Args:
-        hap_one: ((n variants,) ndarray) or ((N samples, n variants) ndarray) 
+        haplotype: ((n variants,) ndarray) or ((N samples, n variants) ndarray) 
             biallelic genotypes where 0 denotes reference and 1 
             denotes the alternative alleles of first haplotype.
-        hap_two:
-            genotypes for haplotype 2, see hap_one
         alpha: (float)
             the log reference expression
         beta: ((n variants,) ndarray)
             log allele fold change, should always be a 1-d array
 
     Returns:
-        (float) or ((N samples,) ndarray)
-            with > 1 sample and arbirary number of variants
+        (float,) or (N samples,) ndarray
+            The abunance of transcripts predicted to originate from
+            the input haplotype
     """
-    if (not utils.is_biallelic(hap_one)
-        or not utils.is_biallelic(hap_two)):
+    if not utils.is_biallelic(haplotype):
         raise ValueError("Genotypes are not biallelic")
 
     if beta.ndim != 1 or not utils.is_numeric_nparray(beta):
@@ -63,12 +60,10 @@ def predict(hap_one, hap_two, alpha, beta):
     if not isinstance(alpha, numbers.Number):
         raise ValueError("alpha must be a number, int or float")
 
-    if hap_one.ndim == 1:
-        hap_one = hap_one.reshape(1, hap_one.size)
-    if hap_two.ndim == 1:
-        hap_two = hap_two.reshape(1, hap_two.size)
+    if haplotype.ndim == 1:
+        haplotype = haplotype.reshape(1, haplotype.size)
 
-    return _predict(hap_one, hap_two, alpha, beta)
+    return _predict(haplotype, alpha, beta)
 
 
 def simulate(hap_one, hap_two, alpha, beta, sd, seed=None):

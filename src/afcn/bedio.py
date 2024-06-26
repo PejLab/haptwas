@@ -575,7 +575,8 @@ class WritePredictionBed(WriteBedABC):
 
         self._write_meta_and_header_data()
 
-    def write_line_record(self, chrom, start, end, name, data):
+    def write_line_record(self, chrom, start, end, name,
+                          predictions, hap_two_predictions=None):
         """Write line of predictions.
 
         Args:
@@ -583,8 +584,15 @@ class WritePredictionBed(WriteBedABC):
             start: (int) genomic coordinate of gene beginning
             end: (int) genomic coordinate of gene end
             name: (str) gene id
-            data: ((n sample, ) iterable) of floats representing predicted
-                gene expression.
+            predictions: ((n sample,) np.ndarray)
+                the behavior changes according to the value of
+                hap_two_predictions as follows:
+                    = None then predictions are log2 (total gene expresssion)
+                    = (n sample,) np.ndarray) then floats representing
+                        predicted gene expression from haplotype one
+            hap_two_predictions: ((n sample,) np.ndarray) or None
+                of floats representing predicted gene expression
+                from haplotype two.  (default is None)
 
         Return:
             None
@@ -592,7 +600,14 @@ class WritePredictionBed(WriteBedABC):
         if not self._meta_and_header_written:
             raise ValueError("Write meta data before real data")
 
-        data_str = self._field_delimiter.join([str(w) for w in data])
+        if hap_two_predictions is None:
+            data_str = predictions.astype(str).tolist()
+        else:
+            data_str = []
+            for h1, h2 in zip(predictions, hap_two_predictions):
+                data_str.append(self._hap_delimiter.join([str(h1), str(h2)]))
+
+        data_str = self._field_delimiter.join(data_str)
         chrom = self._new_line + chrom
 
         record_str = self._field_delimiter.join([chrom, 

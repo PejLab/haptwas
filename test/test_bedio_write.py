@@ -8,7 +8,7 @@ import os
 from datetime import datetime
 import tempfile
 import io
-import random
+import numpy as np
 from collections import OrderedDict
 from unittest import TestCase, main
 
@@ -103,6 +103,7 @@ class TestWritePrediction(TestCase):
         self.b_id.write(header.encode(encoding=self.encoding))
 
         coord = 0
+        rng = np.random.default_rng()
         self.loci_records = []
         self.n_samples = len(self.samp_names)
         self.n_records = 4
@@ -121,12 +122,12 @@ class TestWritePrediction(TestCase):
 
                 s += f"\t{val}"
 
-            tmp["data"] = []
+            tmp["data"] = np.zeros(self.n_samples)
 
-            for _ in range(self.n_samples):
-                val = random.gauss()
+            for j in range(self.n_samples):
+                val = rng.normal()
                 s += f"\t{val}"
-                tmp["data"].append(val)
+                tmp["data"][j] = val
 
             self.loci_records.append(tmp)
 

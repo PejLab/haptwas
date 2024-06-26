@@ -12,23 +12,30 @@ from . import bedio
 from . import vcfio
 
 
-def run(vcf, par_file, output_basename, filters):
+def run(vcf, par_file, output_prefix, filters):
 
     log2_reference_expression = 0
 
-    output_file = f"{output_basename}.bed"
 
     logging.info("Begin predictions")
     # open all files
     with (bedio.open_param(par_file, "r") as fpars,
           vcfio.read_vcf(vcf) as fvcf,
-          bedio.open_predict(output_file, "w") as fout):
+          bedio.open_predict(f"{output_prefix}_total.bed", "w") as fout_tot,
+          bedio.open_predict(f"{output_prefix}_by_hap.bed", "w") as fout_hap):
 
-        # write meta data to output_file
-        fout.meta["vcf"] = vcf
-        fout.meta["parameter_file"] = par_file
+        # write meta data to output files
+        fout_hap.meta["vcf"] = vcf
+        fout_hap.meta["parameter_file"] = par_file
+        fout_hap.meta["sample_values"] = "gene expression haplotype_1 | haplotype_2"
 
         fout.set_sample_names(fvcf.samples)
+
+        fout_tot.meta["vcf"] = vcf
+        fout_tot.meta["parameter_file"] = par_file
+        fout_tot.meta["sample_values"] = "gene expression haplotype_1 + haplotype_2"
+
+        fout_tot.set_sample_names(fvcf.samples)
 
         # Perform gene expression predictions
 
@@ -42,17 +49,19 @@ def run(vcf, par_file, output_basename, filters):
             # get sample genotypes of each gene associated variant
             for i, v in enumerate(variants):
 
-                # recall that some vcf files have multiple records for a genetic locus.
+                # recall that some vcf files have multiple records for
+                # a genetic locus.
                 # To handle such cases get_genotypes returns a list of
                 # records corresponding to that locus, each element of the list
-                # is a dictionary of genotype records for each sample.  Most of the
-                # time there will be a single record retrieved.
+                # is a dictionary of genotype records for each sample.  Most
+                # of the time there will be a single record retrieved.
                 sample_genotype_records = fvcf.get_genotypes(v[fpars.idx("chrom")],
                                                 v[fpars.idx("variant_pos")],
                                                 filter_vals=filters)
 
                 # loop over records found for a specific locus.  Break the loop
-                # once the parameter file alt allele is a member of the vcf alt alleles
+                # once the parameter file alt allele is a member of the vcf
+                # alt alleles
 
                 logging_info = None
                 for samp_rec in sample_genotype_records:
@@ -110,19 +119,28 @@ def run(vcf, par_file, output_basename, filters):
                             haplotypes[hap_num][n, i] = 1
 
 
-            gene_expr = model.predict(haplotypes[0],
-                                      haplotypes[1],
-                                      log2_reference_expression,
-                                      log2_afc)
-
             # not all rec values from this iteration of
             # record should
             # have identical genomic coordinates.
+            haplotype_expression = [model.predict(haplotypes[0],
+                                            log2_reference_expression,
+                                            log2_afc),
+                                    model.predict(haplotypes[1],
+                                            log2_reference_expression,
+                                            log2_afc)]
 
-            fout.write_line_record(v[fpars.idx("chrom")],
+            fout_hap.write_line_record(v[fpars.idx("chrom")],
                                    v[fpars.idx("gene_start")],
                                    v[fpars.idx("gene_end")],
                                    gene_id,
-                                   gene_expr)
+                                   *haplotype_expression)
+
+            fout_tot.write_line_record(v[fpars.idx("chrom")],
+                               v[fpars.idx("gene_start")],
+                               v[fpars.idx("gene_end")],
+                               gene_id,
+                               np.log2(haplotype_expression[0]
+                                       + haplotype_expression[1]))
+
 
     logging.info("End predictions")

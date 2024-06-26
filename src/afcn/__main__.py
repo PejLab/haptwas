@@ -88,10 +88,17 @@ fit_parser.add_argument("--eqtls",
                               "#gene_id and variant_id, "
                               "respectively (default None)"))
 
+fit_parser.add_argument("-p",
+        type=str,
+        default=None,
+        help="Prefix of files produced fit submodule.")
+
 fit_parser.add_argument("-o",
                         type=str,
                         default=None,
-                        help=("Path and file prefix to print results and logs"))
+                        help=("Path and file prefix to print results and logs,"
+                              " if specified direcotory(ies) doesn't exist,"
+                              " then create."))
 
 
 # ================================================================
@@ -146,11 +153,16 @@ predict_parser.add_argument("--filters",
                  filter value.  Input is not
                  case sensitive, default pass""")
 
+predict_parser.add_argument("-p",
+        type=str,
+        default=None,
+        help="Prefix of files produced fit submodule.")
+
 predict_parser.add_argument(
         "-o",
         type=str,
         default=None,
-        help=("Path, for the results and log files"))
+        help="Directory to print results, if does not exists, create.")
 
 # ================================================================
 
@@ -213,10 +225,19 @@ twas_parser.add_argument(
     "--drop_nans",
     action="store_true",
     help="Should nans be dropped from phenotype table")
+
 twas_parser.add_argument(
-    "--out",
+    "-o",
     type=str,
-    help="Print association results to file.")
+    help="Directory to print results, if does not exists, create.")
+
+twas_parser.add_argument(
+        "-p",
+        type=str,
+        help=("Prefix of output log, association filename, etc. to use."
+              " If path exists it will be removed.  If prefix name is always"
+              " appended with the afcn defined extensions, regardless if an"
+              " extension is included."))
 
 
 
@@ -224,11 +245,41 @@ twas_parser.add_argument(
 
 # parse input
 
-
 args = parser.parse_args(sys.argv[1:])
 
+if args.version:
+    import afcn
+    print(f"afcn {afcn.__version__}")
+
+
+# default directories and prefix for output files
 if args.o is None:
-    args.o = args.subparser_name
+    args.o = f"afcn_{args.subparser_name}"
+
+if args.p is None:
+    args.p = "output"
+
+# remove and path related information
+args.p = os.path.basename(args.p)
+
+
+# make all directories that do not exist 
+out_path = None
+
+for directory in args.o.strip(os.path.sep).split(os.path.sep):
+    if out_path is None:
+
+        out_path = directory
+
+    else:
+
+        out_path = os.path.join(out_path, directory)
+
+    if not os.path.exists(out_path):
+        os.mkdir(out_path)
+
+
+args.o = os.path.join(out_path, args.p)
 
 if os.path.sep in args.o and not os.path.exists(os.path.dirname(args.o)):
     os.mkdir(os.path.dirname(args.o))
@@ -240,11 +291,6 @@ logging.basicConfig(filename=f"{args.o}{LOG_SUFFIX}",
                 datefmt="%Y-%m-%d %H:%M:%S")
 logging.info(" ".join(sys.argv))
 
-
-
-if args.version:
-    import afcn
-    print(f"afcn {afcn.__version__}")
 
 if args.subparser_name == "fit":
     from . import _fit
@@ -266,4 +312,5 @@ if args.subparser_name == "twas":
               args.test_type,
               args.missing_phenotype,
               args.drop_nans,
-              args.out)
+              f"{args.o}{os.path.extsep}csv")
+
