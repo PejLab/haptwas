@@ -183,7 +183,6 @@ class TestParseBedABC(TestCase):
 
         i = 0
         for gene_name, g in self.parser.group_by("name"):
-            print(gene_name, g)
             self.assertEqual(gene_name, self.records[i][-1])
 
             for true_record, test_record in zip(self.records[i:len(g)], g):

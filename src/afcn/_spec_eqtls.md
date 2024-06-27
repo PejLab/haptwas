@@ -1,4 +1,4 @@
-### SPECIFICATION: GENVAR FILE
+### SPECIFICATION: EQTLS FILE
 
 BED 3 file with meta data and header as follows:
 
@@ -13,6 +13,7 @@ Contents:
     - chrom,
     - qtl_start: (int) minimum(variant position, gene position)
     - qtl_end: (int) maximum(variant position, gene position)
+    - qtl_id: (str) 
 * custom fields:
     - gene_start: (integer) start of genomic feature
     - gene_end: (integer) end of genomic feature

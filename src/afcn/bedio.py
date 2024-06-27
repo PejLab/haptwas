@@ -445,14 +445,34 @@ def read_eqtl_map(filename):
 
 class ParseEqtlMap(ParseBedABC):
     def __init__(self, fid):
-        super().__init__(fid)
-        self._req_header_fields = generate_eqtl_req_fields()
 
-        self._initialize()
+        try:
+
+            super().__init__(fid)
+            self._req_header_fields = generate_eqtl_req_fields()
+            self._initialize()
+
+        except Exception:
+
+            self.__exit__()
+            raise
 
     def _record_parser(self):
-        pass
-    
+
+        if self.header is None:
+            return None
+
+        for record in self:
+
+            output = record.strip().split(self._field_delimiter)
+
+            i = 0
+            for _, field_type in self._req_header_fields.items():
+                output[i] = field_type(output[i])
+                i += 1
+
+            yield output
+
 
 def read_gene_expression(filename):
     if filename.endswith(".bed"):
