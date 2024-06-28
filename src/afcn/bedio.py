@@ -295,8 +295,6 @@ def generate_param_bed_spec():
     _req_header_fields = generate_eqtl_req_fields()
 
     _req_header_fields["log2_afc"] = float
-    _req_header_fields["sem"] = float
-    _req_header_fields["p_val"] = float
 
     return _req_header_fields
 
