@@ -2,4 +2,4 @@
 
 By: Genomic Data Modeling Lab
 """
-__version__ = "2.1.1dev"
+__version__ = "2.1.1"
