@@ -76,7 +76,6 @@ def association(merged, genes, test_type="linear"):
 
             try:
                 result = model.fit_regularized(method='l1', disp=False)
-
             except Exception as e:
                 logging.info(f"Error fitting gene {gene}: {e}")
                 continue

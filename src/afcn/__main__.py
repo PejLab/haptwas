@@ -3,13 +3,16 @@
 By: Genomic Data Modeling Laboratory
 """
 
+LOG_SUFFIX = ".log"
+
 import sys
 import os
 import argparse
 import logging
 
 
-parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
+parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter)
 
 parser.add_argument("--version",
                     dest="version",
@@ -34,9 +37,9 @@ with open(os.path.join(os.path.dirname(__file__),
     _spec_param = fid.read()
 
 with open(os.path.join(os.path.dirname(__file__),
-                       "_spec_genvar.md"),
+                       "_spec_eqtls.md"),
           "r") as fid:
-    _spec_genvar = fid.read()
+    _spec_eqtls = fid.read()
           
 # ================================================================
 
@@ -56,7 +59,7 @@ f"\n\n{_spec_gene_expression}\n"
 ### SPECIFICATION: VCF
     Defined at: https://samtools.github.io/hts-specs/VCFv4.4.pdf
 """
-f"\n\n{_spec_genvar}\n\n"
+f"\n\n{_spec_eqtls}\n\n"
 """
 RETURNS
 
@@ -76,10 +79,10 @@ fit_parser.add_argument("--expr",
                         help="BED file containing 4 BED fields and "
                             "gene expression per sample.")
 
-fit_parser.add_argument("--genvar", 
+fit_parser.add_argument("--eqtls", 
                         type=str,
                         default=None,
-                        help=("Name of file that contains eQTLs for which log "
+                        help=("Name of file that contains eQTL data for which log "
                               "allelic fold change values are inferred from "
                               "data. The first and second columns must be "
                               "#gene_id and variant_id, "
@@ -91,9 +94,11 @@ fit_parser.add_argument("-p",
         help="Prefix of files produced fit submodule.")
 
 fit_parser.add_argument("-o",
-        type=str,
-        default=None,
-        help="Directory to print results, if does not exists, create.")
+                        type=str,
+                        default=None,
+                        help=("Path and file prefix to print results and logs,"
+                              " if specified direcotory(ies) doesn't exist,"
+                              " then create."))
 
 
 # ================================================================
@@ -277,7 +282,10 @@ for directory in args.o.strip(os.path.sep).split(os.path.sep):
 
 args.o = os.path.join(out_path, args.p)
 
-logging.basicConfig(filename=f"{args.o}.log",
+if os.path.sep in args.o and not os.path.exists(os.path.dirname(args.o)):
+    os.mkdir(os.path.dirname(args.o))
+
+logging.basicConfig(filename=f"{args.o}{LOG_SUFFIX}",
                 level=logging.INFO,
                 filemode="w",
                 format="%(levelname)s\t%(asctime)s\t%(message)s",
@@ -288,7 +296,7 @@ logging.info(" ".join(sys.argv))
 if args.subparser_name == "fit":
     from . import _fit
 
-    _fit.run()
+    _fit.run(args.vcf, args.expr, args.eqtls, args.o)
 
 
 if args.subparser_name == "predict":

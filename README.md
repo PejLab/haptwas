@@ -2,6 +2,9 @@
 
 # 🚧 Under Construction 🚧
 
+TODO: fix file specification inclusion, github markdown
+    does not support the inclusion of different markdown files
+
 # Inferring allele Fold Change (aFC) from phased data
 
 Mohammadi et al. 2017 [1] defined allele fold change (aFC) as the 
@@ -63,6 +66,10 @@ $$
 
 where $\epsilon\sim\mathcal{N}(0,\sigma^2)$.
 
+
+## File specifications
+
+[include](file:src/afcn/_spec_gene_expression.md)
 
 
 ## References

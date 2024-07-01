@@ -9,5 +9,6 @@ src/build
 htmlcov/
 docs/
 build/
+example/*/
 *__pycache__/
 *.ipynb_checkpoints/

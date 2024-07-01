@@ -172,6 +172,7 @@ class ParseGenotypes(VariantFile):
         | 1              | VariantNotFound                |
         | 2              | NoAltAllele                    |
         | 3              | FilterMismatch                 |
+        | 4              | ValueError in fetch            |
         """
 
         if not isinstance(filter_vals, list):
@@ -181,7 +182,17 @@ class ParseGenotypes(VariantFile):
         # Set i to None to detect when no variant is found.  When no
         # variant is found the for loop below does not assign a value
         # to i.
-        records = self.fetch(contig, pos, pos+1)
+        msg = dict(status=1,
+                    msg=("VariantNotFound at locus"
+                    f" {contig}:{pos} not in VCF."))
+        try:
+
+            records = self.fetch(contig, pos, pos+1)
+
+        except ValueError as err:
+
+            records = []
+            msg = dict(status=4, msg=repr(err))
 
         rec = None
 
@@ -191,6 +202,4 @@ class ParseGenotypes(VariantFile):
 
         if rec is None:
 
-            yield dict(status=1,
-                        msg=("VariantNotFound at locus"
-                        f" {contig}:{pos} not in VCF."))
+            yield msg
