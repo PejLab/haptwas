@@ -114,7 +114,7 @@ predict_parser = subparsers.add_parser(
         description="""
 Given an individual's cis-regulatory variant genotype
 and log2 fold change effect sizes predict gene expression,
-in linear scale, under the model by Mohammadi et al.
+in log2 scale, under the model by Mohammadi et al.
 Genome Research 2017.""",
         epilog =("""
 
@@ -164,6 +164,22 @@ predict_parser.add_argument(
         type=str,
         default=None,
         help="Directory to print results, if does not exists, create.")
+
+predict_parser.add_argument(
+        "--scale",
+        type=str,
+        nargs="?",
+        default="linear",
+        choices= ["linear", "log2", "log", "log10"],
+        help="Report predictions in linear, log2, log10, or log (natural log) scale")
+
+predict_parser.add_argument(
+        "--decimals",
+        type=int,
+        default=None
+        help=("Number of decimal places to round predictions."
+              " Rounding is performed in the scale of the returned data.")
+
 
 # ================================================================
 
@@ -301,7 +317,8 @@ if args.subparser_name == "fit":
 
 if args.subparser_name == "predict":
     from . import _predict
-    _predict.run(args.vcf, args.params, args.o, args.filters)
+    _predict.run(args.vcf, args.params, args.o,
+                 args.filters, args.scale, args.decimals)
 
 
 if args.subparser_name == "twas":

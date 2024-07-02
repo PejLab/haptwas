@@ -599,12 +599,20 @@ class WritePredictionBed(WriteBedABC):
         if not self._meta_and_header_written:
             raise ValueError("Write meta data before real data")
 
+        data_str = []
+
         if hap_two_predictions is None:
-            data_str = predictions.astype(str).tolist()
+
+            for pexpr in predictions:
+
+                data_str.append(str(pexpr))
+
         else:
-            data_str = []
+
             for h1, h2 in zip(predictions, hap_two_predictions):
+
                 data_str.append(self._hap_delimiter.join([str(h1), str(h2)]))
+
 
         data_str = self._field_delimiter.join(data_str)
         chrom = self._new_line + chrom

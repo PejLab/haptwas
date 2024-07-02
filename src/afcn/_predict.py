@@ -12,7 +12,43 @@ from . import bedio
 from . import vcfio
 
 
-def run(vcf, par_file, output_prefix, filters):
+
+def _apply_scale(x, scale):
+    """Change data to designated scale.
+
+    Args:
+        x: 
+            any input compatibale with np.log{,2,10}
+        scale: (str)
+            linear, log, log2, log10 
+
+    Returns:
+        transformed data
+
+    Raises:
+        ValueError if scale string isn't in the scale set.
+    """
+    if scale == "log":
+        return np.log(x)
+    elif scale == "log2":
+        return np.log2(x)
+    elif scale == "log10":
+        return np.log10(x)
+    elif scale == "linear":
+        return x
+
+    raise ValueError("Scale must be either linear, log, log2, log10")
+
+
+def _round(x, decimals):
+    """Rounding"""
+    if decimals is None:
+        return x
+
+    return np.round(x, decimals=decimals)
+
+
+def run(vcf, par_file, output_prefix, filters, scale, decimal_places):
 
     log2_reference_expression = 0
 
@@ -28,12 +64,26 @@ def run(vcf, par_file, output_prefix, filters):
         fout_hap.meta["vcf"] = vcf
         fout_hap.meta["parameter_file"] = par_file
         fout_hap.meta["sample_values"] = "gene expression haplotype_1 | haplotype_2"
+        fout_hap.meta["prediction_scale"] = scale
+
+        if decimal_places is None:
+            fout_hap.meta["Rounding"] = "None"
+        else:
+            fout_hap.meta["Rounding"] = (f"Round to {decimal_places}"
+                                         " decimal places")
 
         fout_hap.set_sample_names(fvcf.samples)
 
         fout_tot.meta["vcf"] = vcf
         fout_tot.meta["parameter_file"] = par_file
         fout_tot.meta["sample_values"] = "gene expression haplotype_1 + haplotype_2"
+        fout_tot.meta["prediction_scale"] = scale
+
+        if decimal_places is None:
+            fout_tot.meta["Rounding"] = "None"
+        else:
+            fout_tot.meta["Rounding"] = (f"Round to {decimal_places}"
+                                         " decimal places")
 
         fout_tot.set_sample_names(fvcf.samples)
 
@@ -123,26 +173,40 @@ def run(vcf, par_file, output_prefix, filters):
             # not all rec values from this iteration of
             # record should
             # have identical genomic coordinates.
-            # moreover the abundance of gene transcripts are in linear scale
-            haplotype_expression = [model.predict(haplotypes[0],
+            hap_expr = [model.predict(haplotypes[0],
                                             log2_reference_expression,
                                             log2_afc),
                                     model.predict(haplotypes[1],
                                             log2_reference_expression,
                                             log2_afc)]
 
+            # transform haplotype level gene expression to appropriate scale
+            gene_expression = _apply_scale(hap_expr[0] + hap_expr[1],
+                                           scale)
+            hap_expr = [_apply_scale(h, scale) for h in hap_expr]
+
+
+            # apply rounding
+            for i, h in enumerate(hap_expr):
+
+                hap_expr[i] = _round(h, decimals)
+
+            gene_expression = _round(gene_expression, decimal_places)
+
+        
+            # write to disk
             fout_hap.write_line_record(v[fpars.idx("chrom")],
-                                   v[fpars.idx("gene_start")],
-                                   v[fpars.idx("gene_end")],
-                                   gene_id,
-                                   *haplotype_expression)
+                                       v[fpars.idx("gene_start")],
+                                       v[fpars.idx("gene_end")],
+                                       gene_id,
+                                       hap_expr[0],
+                                       hap_two_predictions = hap_expr[1])
 
             fout_tot.write_line_record(v[fpars.idx("chrom")],
-                               v[fpars.idx("gene_start")],
-                               v[fpars.idx("gene_end")],
-                               gene_id,
-                               haplotype_expression[0]
-                                    + haplotype_expression[1])
+                                       v[fpars.idx("gene_start")],
+                                       v[fpars.idx("gene_end")],
+                                       gene_id,
+                                       gene_expression)
 
 
     logging.info("End predictions")

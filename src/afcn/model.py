@@ -94,8 +94,10 @@ def simulate(hap_one, hap_two, alpha, beta, sd, seed=None):
     if hap_one.ndim == 2:
         size = hap_one.shape[0]
 
-    return (predict(hap_one, hap_two, alpha, beta) * 
-            np.exp(rng.normal(0, sd, size=size)))
+    return (predict(hap_one, alpha, beta)
+                * np.exp(rng.normal(0, sd, size=size))
+            + predict(hap_two, alpha, beta)
+                * np.exp(rng.normal(0, sd, size=size)))
 
 
 def _linear_expansion_model(haplotype_one, haplotype_two, y):
