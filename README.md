@@ -1,52 +1,96 @@
-![unit-tests](https://github.com/PejLab/aFCn/actions/workflows/unit-tests.yml/badge.svg?branch=new_interface)
+https://github.com/PejLab/haptwas.git![unit-tests](https://github.com/PejLab/aFCn/actions/workflows/unit-tests.yml/badge.svg?branch=new_interface)
 
-# 🚧 Under Construction 🚧
 
-TODO: fix file specification inclusion, github markdown
-    does not support the inclusion of different markdown files
+# `afcn` A tool to fit, predict, and perform TWAS using phased genotype data
 
-# Inferring allele Fold Change (aFC) from phased data
+The `afcn` program applies a mechanistic model of gene
+expression regulation by *cis*-regulatory elements developed
+by [Mohammadi et al. 2017 (1)](README.md#(1) and 
+[Ehsan et al. 2024 (2)](README.md#(2)).  Here, we provide submodules
 
-Mohammadi et al. 2017 [1] defined allele fold change (aFC) as the 
+* `afcn fit` to infer model parameters from data
+* `afcn predict` to generate gene expression predictions from
+    phased genotypes.
+* `afcn twas` to perform transcriptome wide association analysis,
+    [TWAS (3)](README.md#(3)) / [prediXcan (4)](README.md#(4))
+
+
+**NOTE** the `fit` module is still under construction (🚧).
+
+## Installation
+
+The package requires `Python >= 3.9` and can be installed directly
+from the GitHub repo using `pip`
+
+```
+python -m pip install git+https://github.com/PejLab/haptwas.git
+```
+
+Alternatively, clone this repository and installed from
+local source code using `pip`.
+
+
+## Examples
+
+Examples and ficticious data can be found in the [example directory](example/)
+of this repository.  These examples demonstrate the enumerate options and
+how to use each submodule.  (`afcn fit` is under construction).
+
+
+## Background
+
+Mohammadi et al. 2017 (1) defined allele fold change (aFC) as the 
 ratio in the number of gene transcripts under the alternative 
 allele with respect to that of the reference allele.  Consequently,
 it is a parameter that quantifies the effect of any one regulatory
-variant with its target gene.  The authors of [1] showed mathematically
+variant with its target gene.  The authors of (1) showed mathematically
 how to combine individual phased genotypes and aFC values to predict 
 observed gene expression.  While this definition and model is general,
 the authors used it to specifically study *cis*-regulatory effects 
-and RNA sequencing data.  To find out more on the model checkout
-the `More on the model` section below.
+of gene regulation.  
 
 This software package for the Python programming language can be 
 used to:
 
+* **fit** model parameter ($\theta$) values by least squares.  As an example
+    consider the *cis*-regulation of an arbitrary gene.  Let
+    $i = 1,2,\dots, N$ be an index identifying one of $N$ samples,
+    $j = 1,2, \dots, J$ be an index identifying one of $J$ *cis*-regulatory
+    loci, and $h=1,2$ be an index identifying one of 2 phased haplotypes.
+    For each $i$, we have RNA Sequencing derived gene counts $y_i$ and
+    $J$ length vectors of phased haplotypes $x_i^{(1)}$ and 
+    $x_i^{(2)}$.  An allele of locus $j$ for haplotype $h$ sample $i$,
+    $x_{ij}^{(h)}$ takes values 0 and 1 representing the presence of
+    either reference or alternative allele.  Lastly, let's denote the
+    model predicted expression of our arbitrary gene by haplotype
+    $h$, defined by Mohammadi et al. 2017 (1),
+
+$$
+g\big(x_i^{(h)}, \alpha, \beta\big) = 2^{\alpha + \x_{i}^{(h)\;T}\beta}
+$$
+
+then the total expression of the gene in sample $i$ is
+
+$$
+f\big(x_i^{(1)}, x_i^{(2)},\alpha, \beta\big) = g\big(x_i^{(1)}, \alpha, \beta\big)
++ g\big(x_i^{(2)}, \alpha, \beta\big)
+$$
+    
+Where $\alpha$ is a scalar represents the log2 reference expression
+and $\beta$ is a $J$ length vector the log2 fold change per locus.  Inference
+of these parameters will be computed by least squares
+
+$$
+\hat{\alpha},\hat{\beta} = \mathop{\text{argmin}}_{\alpha,\beta}
+    \sum_{i=1}^N \left(
+    \log_2\big(y_i + 1\big) - \log_2\big( f(x_i^{(1)},x_i^{(2)}, \alpha,\beta)\big)
+    \right)^2
+$$
+
 * **predict** gene expression abundances from genotype data under
-    the model of [1].
+    the model of (1).
 
 from either the command line or within a Python script.
-
-
-## Installation
-
-🚧
-
-<!-- The package can be installed directly from the GitHub repo using `pip`
-
-```
-python -m pip install git+https://github.com/PejLab/aFCn.git
-```
-
-or cloned and installed from local source code using pip.
--->
-
-## Examples
-
-
-## API
-
-
-## More on the model
 
 To begin, let's define the model variables:
 
@@ -67,14 +111,9 @@ $$
 where $\epsilon\sim\mathcal{N}(0,\sigma^2)$.
 
 
-## File specifications
-
-[include](file:src/afcn/_spec_gene_expression.md)
-
-
 ## References
 
-[1] Mohammadi et al. *Genome Research* 2017
+### (1) 
 
 ```
 @article{Mohammadi2017GenomeResearch,
@@ -89,16 +128,47 @@ where $\epsilon\sim\mathcal{N}(0,\sigma^2)$.
 }
 ```
 
-[2] Ehsan et al. BioRxiv
+### (2)
 
 ```
-@article {Ehsan2022BioRxiv,
-	author = {Nava Ehsan and Bence M. Kotis and Stephane E. Castel and Eric J. Song and Nicholas Mancuso and Pejman Mohammadi},
-	title = {Haplotype-aware modeling of cis-regulatory effects highlights the gaps remaining in eQTL data},
-	year = {2022},
-	doi = {10.1101/2022.01.28.478116},
-	publisher = {Cold Spring Harbor Laboratory},
-	URL = {https://www.biorxiv.org/content/early/2022/01/28/2022.01.28.478116},
-	journal = {bioRxiv}
+@article{Ehsan2024NatureCommunications,
+  title={Haplotype-aware modeling of cis-regulatory effects highlights the gaps remaining in eQTL data},
+  author={Ehsan, Nava and Kotis, Bence M and Castel, Stephane E and Song, Eric J and Mancuso, Nicholas and Mohammadi, Pejman},
+  journal={Nature Communications},
+  volume={15},
+  number={1},
+  pages={522},
+  year={2024},
+  publisher={Nature Publishing Group UK London}
+}
+```
+
+### (3)
+
+```
+@article{Gusev2016NatureGenetics,
+  title={Integrative approaches for large-scale transcriptome-wide association studies},
+  author={Gusev, Alexander and Ko, Arthur and Shi, Huwenbo and Bhatia, Gaurav and Chung, Wonil and Penninx, Brenda WJH and Jansen, Rick and De Geus, Eco JC and Boomsma, Dorret I and Wright, Fred A and others},
+  journal={Nature Genetics},
+  volume={48},
+  number={3},
+  pages={245--252},
+  year={2016},
+  publisher={Nature Publishing Group US New York}
+}
+```
+
+### (4)
+
+```
+@article{Gamazon2015NatureGenetics,
+  title={A gene-based association method for mapping traits using reference transcriptome data},
+  author={Gamazon, Eric R and Wheeler, Heather E and Shah, Kaanan P and Mozaffari, Sahar V and Aquino-Michaels, Keston and Carroll, Robert J and Eyler, Anne E and Denny, Joshua C and GTEx Consortium and Nicolae, Dan L and others},
+  journal={Nature Genetics},
+  volume={47},
+  number={9},
+  pages={1091--1098},
+  year={2015},
+  publisher={Nature Publishing Group US New York}
 }
 ```
