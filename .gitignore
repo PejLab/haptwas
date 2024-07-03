@@ -2,6 +2,7 @@
 *.c
 src/build
 *~
+*.vscode
 *.DS_Store
 *.swp
 *.coverage
