@@ -1,11 +1,11 @@
-https://github.com/PejLab/haptwas.git![unit-tests](https://github.com/PejLab/aFCn/actions/workflows/unit-tests.yml/badge.svg?branch=new_interface)
+![unit-tests](https://github.com/PejLab/aFCn/actions/workflows/unit-tests.yml/badge.svg?branch=new_interface)
 
 
 # `afcn` A tool to fit, predict, and perform TWAS using phased genotype data
 
 The `afcn` program applies a mechanistic model of gene
 expression regulation by *cis*-regulatory elements developed
-by [Mohammadi et al. 2017 (1)](README.md#(1) and 
+by [Mohammadi et al. 2017 (1)](README.md#(1)) and 
 [Ehsan et al. 2024 (2)](README.md#(2)).  Here, we provide submodules
 
 * `afcn fit` to infer model parameters from data
@@ -26,7 +26,7 @@ from the GitHub repo using `pip`
 python -m pip install git+https://github.com/PejLab/haptwas.git
 ```
 
-Alternatively, clone this repository and installed from
+Alternatively, clone this repository then install from
 local source code using `pip`.
 
 
@@ -50,30 +50,32 @@ the authors used it to specifically study *cis*-regulatory effects
 of gene regulation.  
 
 This software package for the Python programming language can be 
-used to:
+used as:
 
-* **fit** model parameter ($\theta$) values by least squares.  As an example
+`afcn fit`
+
+Infers model parameters ($\alpha$, $\beta$) values by least squares.  As an example
     consider the *cis*-regulation of an arbitrary gene.  Let
     $i = 1,2,\dots, N$ be an index identifying one of $N$ samples,
     $j = 1,2, \dots, J$ be an index identifying one of $J$ *cis*-regulatory
     loci, and $h=1,2$ be an index identifying one of 2 phased haplotypes.
     For each $i$, we have RNA Sequencing derived gene counts $y_i$ and
     $J$ length vectors of phased haplotypes $x_i^{(1)}$ and 
-    $x_i^{(2)}$.  An allele of locus $j$ for haplotype $h$ sample $i$,
-    $x_{ij}^{(h)}$ takes values 0 and 1 representing the presence of
-    either reference or alternative allele.  Lastly, let's denote the
+    $x_i^{(2)}$.  An allele at locus $j$ for haplotype $h$ sample $i$,
+    $x_{ij}^{(h)}$, takes values 0 and 1 representing the presence of
+    either reference or alternative allele, respectively.  Let's denote the
     model predicted expression of our arbitrary gene by haplotype
     $h$, defined by Mohammadi et al. 2017 (1),
-
+  
 $$
-g\big(x_i^{(h)}, \alpha, \beta\big) = 2^{\alpha + \x_{i}^{(h)\;T}\beta}
+    g\big(x_i^{(h)}, \alpha, \beta\big) = 2^{\alpha + x_{i}^{(h) T}\beta}
 $$
 
 then the total expression of the gene in sample $i$ is
 
 $$
-f\big(x_i^{(1)}, x_i^{(2)},\alpha, \beta\big) = g\big(x_i^{(1)}, \alpha, \beta\big)
-+ g\big(x_i^{(2)}, \alpha, \beta\big)
+f\big(x_i^{(1)}, x_i^{(2)},\alpha, \beta\big) = g\big(x_i^{(1)}, \alpha, \beta\big) \
+    + g\big(x_i^{(2)}, \alpha, \beta\big)
 $$
     
 Where $\alpha$ is a scalar represents the log2 reference expression
@@ -81,35 +83,18 @@ and $\beta$ is a $J$ length vector the log2 fold change per locus.  Inference
 of these parameters will be computed by least squares
 
 $$
-\hat{\alpha},\hat{\beta} = \mathop{\text{argmin}}_{\alpha,\beta}
-    \sum_{i=1}^N \left(
-    \log_2\big(y_i + 1\big) - \log_2\big( f(x_i^{(1)},x_i^{(2)}, \alpha,\beta)\big)
+\hat{\alpha},\hat{\beta} = \underset{\alpha,\beta}{\text{argmin}} \
+    \sum_{i=1}^N \left( \
+    \log_2\big(y_i + 1\big) - \log_2\big( f(x_i^{(1)},x_i^{(2)}, \alpha,\beta)\big) \
     \right)^2
 $$
 
-* **predict** gene expression abundances from genotype data under
-    the model of (1).
+`afcn predict`
 
-from either the command line or within a Python script.
-
-To begin, let's define the model variables:
-
-* $Y\in\mathbb{R_{>=0}}$ the abundance of a gene, 
-* $x_h\in\{0,1\}^{n\times 1}$ encoding $n$ biallelic 
-*cis*-regulatory, reference (0) and alternative (1) allele, variants for haplotype $h\in\{1,2\}$, 
-* $\alpha\in\mathbb{R}$ the log abundance under the reference haplotype
-* $\beta\in\mathbb{R}^{n\times 1}$ the log allele fold change
-
-then it follows that
-
-$$
-\log(Y) = 
-    \log 2 \left(2^{\alpha + x_1^{T}\beta} + 2^{\alpha + x_2^{T}\beta}\right) + 
-    \epsilon
-$$ 
-
-where $\epsilon\sim\mathcal{N}(0,\sigma^2)$.
-
+Estimate the gene count of sample $i$ attributed to
+  haplotype $h$ is $g(x_{i}^{(h)},\alpha=0,\beta)$, and
+  the total gene count $f(x_{i}^{(1)},x_{i}^{(2)},\alpha=0,\beta)$.
+  
 
 ## References
 
