@@ -70,9 +70,9 @@ def run(vcf, par_file, output_prefix, filters, scale, decimal_places):
                                               " haplotype_2)")
 
         if decimal_places is None:
-            fout_hap.meta["Rounding"] = "None"
+            fout_hap.meta["rounding"] = "None"
         else:
-            fout_hap.meta["Rounding"] = (f"Round to {decimal_places}"
+            fout_hap.meta["rounding"] = (f"Round to {decimal_places}"
                                          " decimal places")
 
         fout_hap.set_sample_names(fvcf.samples)
@@ -84,9 +84,9 @@ def run(vcf, par_file, output_prefix, filters, scale, decimal_places):
                                               " gene expression haplotype_2)")
 
         if decimal_places is None:
-            fout_tot.meta["Rounding"] = "None"
+            fout_tot.meta["rounding"] = "None"
         else:
-            fout_tot.meta["Rounding"] = (f"Round to {decimal_places}"
+            fout_tot.meta["rounding"] = (f"Round to {decimal_places}"
                                          " decimal places")
 
         fout_tot.set_sample_names(fvcf.samples)

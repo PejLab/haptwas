@@ -8,10 +8,16 @@ BED 4 file with meta data and header as follows:
 
 Contents:
 
-* meta data
+* Required meta data
     - ##afcn_version=(version str)
     - ##vcf_file=(str)
     - ##parameter_file=(str)
+    - ##prediction_scale=(str) whether the data is in linear scale
+        or transformed to log (natural log), log2, log10 scale
+    - ##prediction_values=(str) describes what type and format of
+        data is written in file
+    - ##rounding=(str) whether the data were rounded, and if
+        so to what decimal place
 * BED fields labeled: 
     - chrom
     - start : gene start position
