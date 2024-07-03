@@ -86,7 +86,7 @@ expression predictions to three decimal places in directory
 
 * `-p`: string for file prefix, e.g. `-p today` results in a
     total gene expression file *today_predictions_total.bed*
-* `o`: string / path of directory to write prediction files
+* `-o`: string / path of directory to write prediction files
 
 
 This can be produced by
