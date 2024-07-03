@@ -176,9 +176,9 @@ predict_parser.add_argument(
 predict_parser.add_argument(
         "--decimals",
         type=int,
-        default=None
+        default=None,
         help=("Number of decimal places to round predictions."
-              " Rounding is performed in the scale of the returned data.")
+              " Rounding is performed in the scale of the returned data."))
 
 
 # ================================================================
@@ -267,6 +267,7 @@ args = parser.parse_args(sys.argv[1:])
 if args.version:
     import afcn
     print(f"afcn {afcn.__version__}")
+    quit()
 
 
 # default directories and prefix for output files

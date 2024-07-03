@@ -76,9 +76,9 @@ def simulate(hap_one, hap_two, alpha, beta, sd, seed=None):
         hap_two:
             genotypes for haplotype 2, see hap_one
         alpha: (float)
-            the log reference expression
+            the log2 reference expression
         beta: ((n variants,) ndarray)
-            log allele fold change, should always be a 1-d array
+            log2 allele fold change, should always be a 1-d array
         sd: (float)
             standard deviation of log-normal noise
         seed:
@@ -187,14 +187,13 @@ def _obj(haplotype_one, haplotype_two, y, reg, reg_const):
     
 
     def _g(k):
-
         return (np.sum((y 
-            - np.log(1 + _predict(haplotype_one,
+            - np.log2(1 + _predict(haplotype_one,
                                k[0],
                                k[1:])
                      + _predict(haplotype_two,
                                 k[0],
-                                k[1:]))**2))
+                                k[1:])))**2)
             + _penalty_func(k))
 
     return _g
@@ -239,7 +238,7 @@ def fit(haplotype_one, haplotype_two, y, reg=None, reg_const=None):
 
     # nonlinear optimization
     objective = _obj(haplotype_one, haplotype_two,
-                     np.log(y+1),
+                     np.log2(y+1),
                      reg, reg_const)
 
     jacobian = utils.Gradient(objective)

@@ -67,8 +67,8 @@ class TestObj(unittest.TestCase):
 
         self.effect_sizes = self.rng.normal(0,2,size=self.j_vars)
 
-        self.y = (np.exp(self.hap_one @ self.effect_sizes)
-                  + np.exp(self.hap_one @ self.effect_sizes))
+        self.y = (np.exp2(self.hap_one @ self.effect_sizes)
+                  + np.exp2(self.hap_one @ self.effect_sizes))
 
     def test_variables_and_output_type(self):
 
@@ -108,8 +108,9 @@ class TestObj(unittest.TestCase):
 
         # when all the haplotypes match the reference
         # allele, then I expect the model prediction to produce
-        # 2* exp(log_ref_const)  = 2 * exp2(1) = 4
-        y = np.zeros(self.n_samples) + np.log(1 + 4)
+        # 2* exp2(log_ref_const)  = 2 * exp2(1) = 4
+
+        y = np.zeros(self.n_samples) + np.log2(1. + 4)
 
         haplotypes = np.zeros(shape=self.hap_one.shape)
 
@@ -120,9 +121,9 @@ class TestObj(unittest.TestCase):
         self.assertAlmostEqual(f(pars), ssr_no_penalty)
         
 
-        # 2* exp(log_ref_const)  = 2 * exp2(-1) = 1
-        pars = -np.ones(self.j_vars+1)
-        y = np.zeros(self.n_samples) + np.log(1 + 1)
+        # 2* 2^(log_ref_const)  = 2 * 2^(-1) = 1
+        pars = -np.ones(self.j_vars + 1)
+        y = np.zeros(self.n_samples) + np.log2(1 + 1)
 
         f = model._obj(haplotypes, haplotypes, y, reg, regconst)
         self.assertEqual(f(pars), ssr_no_penalty)
@@ -143,8 +144,8 @@ class TestObj(unittest.TestCase):
 
         # when all the haplotypes are match the reference
         # allele, then I expect the model prediction to produce
-        # 2* exp(log_ref_const)  = 2 * exp2(1) = 4
-        y = np.zeros(self.n_samples) + np.log(1 + 4)
+        # 2* exp2(log_ref_const)  = 2 * exp2(1) = 4
+        y = np.zeros(self.n_samples) + np.log2(1 + 4)
 
         haplotypes = np.zeros(shape=self.hap_one.shape)
 
@@ -162,7 +163,7 @@ class TestObj(unittest.TestCase):
 
         # 2* exp(log_ref_const)  = 2 * exp2(-1) = 1
         pars = -np.ones(self.j_vars+1)
-        y = np.zeros(self.n_samples) + np.log(1 + 1)
+        y = np.zeros(self.n_samples) + np.log2(1 + 1)
 
         f = model._obj(haplotypes, haplotypes, y, reg, regconst)
         self.assertEqual(f(pars), regconst*(self.j_vars + 1))
@@ -184,7 +185,7 @@ class TestObj(unittest.TestCase):
         # when all the haplotypes are match the reference
         # allele, then I expect the model prediction to produce
         # 2* exp(log_ref_const)  = 2 * exp2(1) = 4
-        y = np.zeros(self.n_samples) + np.log(1 + 4)
+        y = np.zeros(self.n_samples) + np.log2(1 + 4)
 
         haplotypes = np.zeros(shape=self.hap_one.shape)
 
@@ -202,7 +203,7 @@ class TestObj(unittest.TestCase):
 
         # 2* exp(log_ref_const)  = 2 * exp2(-1) = 1
         pars = -np.ones(self.j_vars+1)
-        y = np.zeros(self.n_samples) + np.log(1 + 1)
+        y = np.zeros(self.n_samples) + np.log2(1 + 1)
 
         f = model._obj(haplotypes, haplotypes, y, reg, regconst)
         self.assertAlmostEqual(f(pars), regconst*(self.j_vars + 1))

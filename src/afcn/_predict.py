@@ -63,8 +63,11 @@ def run(vcf, par_file, output_prefix, filters, scale, decimal_places):
         # write meta data to output files
         fout_hap.meta["vcf"] = vcf
         fout_hap.meta["parameter_file"] = par_file
-        fout_hap.meta["sample_values"] = "gene expression haplotype_1 | haplotype_2"
         fout_hap.meta["prediction_scale"] = scale
+        fout_hap.meta["prediction_values"] = ("scale_transform(gene expression"
+                                              " haplotype_1)|"
+                                              "scale_transform(gene expression"
+                                              " haplotype_2)")
 
         if decimal_places is None:
             fout_hap.meta["Rounding"] = "None"
@@ -76,8 +79,9 @@ def run(vcf, par_file, output_prefix, filters, scale, decimal_places):
 
         fout_tot.meta["vcf"] = vcf
         fout_tot.meta["parameter_file"] = par_file
-        fout_tot.meta["sample_values"] = "gene expression haplotype_1 + haplotype_2"
         fout_tot.meta["prediction_scale"] = scale
+        fout_tot.meta["prediction_values"] = ("scale_transform(gene expression haplotype_1 +"
+                                              " gene expression haplotype_2)")
 
         if decimal_places is None:
             fout_tot.meta["Rounding"] = "None"
@@ -189,7 +193,7 @@ def run(vcf, par_file, output_prefix, filters, scale, decimal_places):
             # apply rounding
             for i, h in enumerate(hap_expr):
 
-                hap_expr[i] = _round(h, decimals)
+                hap_expr[i] = _round(h, decimal_places)
 
             gene_expression = _round(gene_expression, decimal_places)
 
