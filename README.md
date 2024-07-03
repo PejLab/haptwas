@@ -12,10 +12,10 @@ by [Mohammadi et al. 2017 (1)](README.md#(1)) and
 * `afcn predict` to generate gene expression predictions from
     phased genotypes.
 * `afcn twas` to perform transcriptome wide association analysis,
-    [TWAS (3)](README.md#(3)) / [prediXcan (4)](README.md#(4))
+    [TWAS (3)](README.md#(3)) / [prediXcan (4)](README.md#(4)),
+      🚧 **under construction** 🚧
 
 
-**NOTE** the `fit` module is still under construction (🚧).
 
 ## Installation
 
@@ -37,7 +37,7 @@ of this repository.  These examples demonstrate the enumerate options and
 how to use each submodule.  (`afcn fit` is under construction).
 
 
-## Background
+## Method description
 
 Mohammadi et al. 2017 (1) defined allele fold change (aFC) as the 
 ratio in the number of gene transcripts under the alternative 
@@ -52,7 +52,7 @@ of gene regulation.
 This software package for the Python programming language can be 
 used as:
 
-`afcn fit`
+`afcn fit` 🚧 **under construction** 🚧
 
 Infers model parameters ($\alpha$, $\beta$) values by least squares.  As an example
     consider the *cis*-regulation of an arbitrary gene.  Let
